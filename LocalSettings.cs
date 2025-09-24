@@ -32,6 +32,8 @@ namespace CharmReValance
 		private static readonly int defaultMaximumOverheal = 1;
 
 //	Default Nail Settings
+		private static readonly int defaultNailDamageBase = 5;
+		private static readonly int defaultNailDamageUpgrade = 3;
         private static readonly float defaultNailCooldown = 0.41f;
         private static readonly float defaultNailKnockback = 1.0f;
 		private static readonly float defaultParryIFrames = 0.25f;
@@ -123,13 +125,13 @@ namespace CharmReValance
         private static readonly int defaultCharm5NotchCost = 2;
         private static readonly int defaultBaldurShellBlocks = 3;
         private static readonly float defaultBaldurShellKnockback = 1.8f;
-		private static readonly int defaultBaldurShellLifebloodHeartOverhealMaxIncrease = 1;
 		private static readonly bool defaultBaldurShellDeepFocusAffected = true;
-		private static readonly int defaultBaldurShellDefendersCrestBlocks = 4;
+		private static readonly int defaultBaldurShellDefendersCrestBlocks = 5;
 		private static readonly bool defaultBaldurShellGreedShell = true;
         private static readonly int defaultBaldurShellGreedGeoLossRate = 20;
         private static readonly int defaultBaldurShellGreedGeoDrop = 20;
         private static readonly float defaultBaldurShellGreedDCGeoLossRate = 0.8f;
+		private static readonly int defaultBaldurShellLifebloodHeartOverhealMaxIncrease = 1;
 
 //	Carefree Melody
 		private static readonly int defaultCharmCarefreeMelodyNotchCost = 3;
@@ -144,8 +146,6 @@ namespace CharmReValance
         private static readonly float defaultDashmasterDashCooldown = 0.4f;
 		private static readonly float defaultDashmasterShadeCloakCooldown = 1.0f;
 		private static readonly int defaultDashmasterCDashDamage = 40;
-		private static readonly bool defaultDashmasterFotFDashInvulnerable = true;
-		private static readonly float defaultDashmasterFotFInvulnerableTime = 0.75f;
 
 //	Deep Focus
         private static readonly int defaultCharm34NotchCost = 3;
@@ -569,6 +569,12 @@ namespace CharmReValance
         }
 
 //	Nail Settings
+        [InputIntElement("Nail Settings", "Base Nail Damage", 0, 20)]
+		public int regularNailDamageBase = defaultNailDamageBase;
+
+        [InputIntElement("Nail Settings", "Nail Damage Upgrades", 0, 20)]
+		public int regularNailDamageUpgrade = defaultNailDamageUpgrade;
+
         [InputFloatElement("Nail Settings", "Nail Cooldown", 0f, 2f)]
         public float regularNailCooldown = defaultNailCooldown;
 
@@ -590,6 +596,8 @@ namespace CharmReValance
         [ButtonElement("Nail Settings", "Reset Defaults", "")]
         public void ResetNailSettings()
         {
+			regularNailDamageBase = defaultNailDamageBase;
+			regularNailDamageUpgrade = defaultNailDamageUpgrade;
 			regularNailCooldown = defaultNailCooldown;
 			regularNailKnockback = defaultNailKnockback;
 			regularParryIFrames = defaultParryIFrames;

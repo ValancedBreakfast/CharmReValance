@@ -485,8 +485,7 @@ namespace CharmReValance
         {
             if (name == "nailDamage")
             {
-                //  Nail upgrades only grant +3 damage instead of +4
-                orig = (int)(orig - PlayerDataAccess.nailSmithUpgrades);
+                orig = LS.regularNailDamageBase + (LS.regularNailDamageUpgrade * PlayerDataAccess.nailSmithUpgrades);
             }
 
             return orig;
