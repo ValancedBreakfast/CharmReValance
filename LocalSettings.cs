@@ -824,12 +824,6 @@ namespace CharmReValance
         [InputIntElement("Dashmaster", "Crystal Dash Damage", 0, 100)]
 		public int dashmasterCDashDamage = defaultDashmasterCDashDamage;
 
-        [BoolElement("Dashmaster", "FotF Invulnerable Dash", "")]
-		public bool dashmasterFotFDashInvulnerable = defaultDashmasterFotFDashInvulnerable;
-
-        [InputFloatElement("Dashmaster", "FotF Invulnerable Time", 0f, 5f)]
-		public float dashmasterFotFInvulnerableTime = defaultDashmasterFotFInvulnerableTime;
-
         [ButtonElement("Dashmaster", "Reset Defaults", "")]
         public void ResetDashmaster()
         {
@@ -838,8 +832,6 @@ namespace CharmReValance
 			dashmasterDashCooldown = defaultDashmasterDashCooldown;
 			dashmasterShadeCloakCooldown = defaultDashmasterShadeCloakCooldown;
 			dashmasterCDashDamage = defaultDashmasterCDashDamage;
-			dashmasterFotFDashInvulnerable = defaultDashmasterFotFDashInvulnerable;
-			dashmasterFotFInvulnerableTime = defaultDashmasterFotFInvulnerableTime;
         }
 
 //	Deep Focus
@@ -855,7 +847,7 @@ namespace CharmReValance
         [InputFloatElement("Deep Focus", "Deep Focus Crystal Dash Damage Multiplier", 1f, 3f)]
 		public float deepFocusCDashDamageMult = defaultDeepFocusCDashDamageMult;
 
-        [InputFloatElement("Deep Focus", "Deep Focus Crystal Dash Time Multiplier", 1f, 3f)]
+        [InputFloatElement("Deep Focus", "Deep Focus Crystal Dash Time Multiplier", 1f, 5f)]
 		public float deepFocusCDashTimeMult = defaultDeepFocusCDashTimeMult;
 
         [ButtonElement("Deep Focus", "Reset Defaults", "")]

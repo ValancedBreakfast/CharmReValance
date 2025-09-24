@@ -51,6 +51,7 @@ namespace CharmReValance
         #region Custom Variables
         private bool charmsReordered = false;
         private float nailCooldown = LS.regularNailCooldown;
+        private float cdashChargeTime = LS.regularCDashChargeTime;
 
         private bool baldurShellBlocked = false;
         private int baldurGreedShellBlocks = 0;
@@ -151,7 +152,8 @@ namespace CharmReValance
             #region Ability Hooks
 
 //  Movement 
-            On.HutongGames.PlayMaker.Actions.Wait.OnEnter += CrystalDashChargeTime;
+            On.HeroController.CharmUpdate += CrystalDashChargeTime;
+            On.HutongGames.PlayMaker.Actions.iTweenMoveBy.OnEnter += SDCrystalGenTween;
             On.HutongGames.PlayMaker.Actions.TakeDamage.OnEnter += CrystalDashDamage;
 
 //  Damage & Focus
@@ -404,17 +406,22 @@ namespace CharmReValance
         #region Ability Changes
 
 //  Movement Changes
-//  TODO: Crystal Dash charge time not being affected by Deep/Quick Focus
         #region Movement Changes
-        private void CrystalDashChargeTime(On.HutongGames.PlayMaker.Actions.Wait.orig_OnEnter orig, Wait self)
+        private void CrystalDashChargeTime(On.HeroController.orig_CharmUpdate orig, HeroController self)
         {
-            if (self.Fsm.GameObject.name == "Knight" && self.Fsm.Name == "Superdash" && self.State.Name.EndsWith(" Charge"))
+            cdashChargeTime = LS.regularCDashChargeTime
+                * (PlayerDataAccess.equippedCharm_7 ? LS.quickFocusCDashTimeMult : 1f)
+                * (PlayerDataAccess.equippedCharm_34 ? LS.deepFocusCDashTimeMult : 1f);
+            self.gameObject.LocateMyFSM("Superdash").GetFsmFloatVariable("Charge Time").Value = cdashChargeTime;
+            //Log("Crystal Dash charge time: " + cdashChargeTime);
+
+            orig(self);
+        }
+        private void SDCrystalGenTween(On.HutongGames.PlayMaker.Actions.iTweenMoveBy.orig_OnEnter orig, iTweenMoveBy self)
+        {
+            if (self.Fsm.Name == "superdash_crystal_gen" && PlayerDataAccess.equippedCharm_34)
             {
-                float chargeTime = LS.regularCDashChargeTime
-                    * (PlayerDataAccess.equippedCharm_7 ? LS.quickFocusCDashTimeMult : 1f)
-                    * (PlayerDataAccess.equippedCharm_34 ? LS.deepFocusCDashTimeMult : 1f);
-                self.time = chargeTime;
-                Log("Crystal Dash charge time: " + chargeTime);
+                self.time = cdashChargeTime;
             }
 
             orig(self);
