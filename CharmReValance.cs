@@ -2024,7 +2024,6 @@ namespace CharmReValance
         #endregion
 
 //	Heavy Blow
-//  TODO: should destroy beeswax walls faster
         #region Heavy Blow Changes
 		//	Nail Damage Increase
 		private int HeavyBlowNailDamageIncrease(string name, int orig)
@@ -2064,7 +2063,8 @@ namespace CharmReValance
             if (PlayerDataAccess.equippedCharm_15)
             {
                 if ((self.Fsm.GameObject.name.StartsWith("Geo Rock") && self.Fsm.Name.StartsWith("Geo Rock") && self.State.Name == "Hit")
-                    || (self.Fsm.Name.StartsWith("breakable_wall") && self.State.Name.StartsWith("Hit ")))
+                    || (self.Fsm.Name.StartsWith("breakable_wall") && self.State.Name.StartsWith("Hit "))
+                    || (self.Fsm.GameObject.name.StartsWith("Hive Breakable ") && self.State.Name == "Damage"))
                 {
                     self.integer2 = LS.heavyBlowEnviroHits;
                     //Log("Heavy Blow damages environment faster.");
@@ -2080,7 +2080,10 @@ namespace CharmReValance
                 if ((self.Fsm.GetFsmInt("Hits").Value + 1) * LS.heavyBlowEnviroHits >= 3)
                 {
                     Log("break_floor should be destroyed.");
-                    self.Fsm.SetState("PlayerData");
+                    if (self.Fsm.GetState("PlayerData") != null)
+                        self.Fsm.SetState("PlayerData");
+                    else
+                        self.Fsm.SetState("Break");
                 }
             }
 
