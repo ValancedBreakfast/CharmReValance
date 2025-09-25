@@ -148,7 +148,7 @@ namespace CharmReValance
 		private static readonly int defaultDashmasterCDashDamage = 40;
 
 //	Deep Focus
-        private static readonly int defaultCharm34NotchCost = 3;
+        private static readonly int defaultCharm34NotchCost = 2;
         private static readonly int defaultDeepFocusHealing = 2;
         private static readonly float defaultDeepFocusHealingTimeMult = 1.65f;
 		private static readonly float defaultDeepFocusCDashDamageMult = 2f;
@@ -464,7 +464,7 @@ namespace CharmReValance
 		private static readonly float defaultThornsOfAgonyStalwartShellRadius = 0.3f;
 		private static readonly float defaultThornsOfAgonySteadyBodyDamage = 0.67f;
 		private static readonly float defaultThornsOfAgonySteadyBodyRadius = 0.15f;
-		private static readonly bool defaultThornsOfAgonyFlukenestSpray = true;	//	TODO
+		private static readonly bool defaultThornsOfAgonyFlukenestSpray = true;
 
 //	Wayward Compass
         private static readonly int defaultCharm2NotchCost = 0;
