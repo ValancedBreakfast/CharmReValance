@@ -316,7 +316,7 @@ Below is an itemized list of the changes made to each ability and charm. And whe
 - Syengry w/ Fury of the Fallen: While furious, damage increases by ~2.7 per lost mask.
 - Synergy w/ Stalwart Shell: Radius increased by 30%.
 - Synergy w/ Steady Body: Damage increases by ~0.7 per lost mask. Radius increased by 15%.
-- _Synergy w/ Flukenest: Causes a spray of flukes in all directions. (Not yet implemented.)_
+- Synergy w/ Flukenest: Causes a spray of flukes in all directions.
 
 ### Wayward Compass
 

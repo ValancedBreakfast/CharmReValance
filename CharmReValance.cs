@@ -1,6 +1,7 @@
 using GlobalEnums;
 using HKMirror;
 using HKMirror.Hooks.ILHooks;
+using HKMirror.Reflection;
 using HKMirror.Reflection.SingletonClasses;
 using HutongGames.PlayMaker;
 using HutongGames.PlayMaker.Actions;
@@ -62,7 +63,9 @@ namespace CharmReValance
         private GameObject dreamshield = null;
         private Rotate dreamshieldRotation = null;
         private bool dreamshieldBlock = false;
-		private bool furyActive = false;
+        private GameObject _flukePrefab;
+        private GameObject _flukeBlackPrefab;
+        private bool furyActive = false;
         private int grubSoulGain = LS.grubsongSoulGain;
         private bool hivebloodRegenMore = false;
         private int hivebloodRegenLimit = 1;
@@ -130,21 +133,74 @@ namespace CharmReValance
 
             orig(self, hitInstance);
         }
+        private void CrystalShotDebug(On.HutongGames.PlayMaker.Actions.FireAtTarget.orig_OnEnter orig, FireAtTarget self)
+        {
+            orig(self);
 
+            if (self.Fsm.GameObject.name.StartsWith("Crystal Flyer"))
+            {
+                var shot = self.gameObject.GameObject.Value;
+                Log("Shot: " + shot.name);
+                Log("Tag: " + shot.tag);
+                Log("Layer: " + shot.layer);
+            }
+        }
         #endregion
 
 
 ////////////////////////////////////////////////////////////////
 //	INITIALIZE
+        public void GetPrefabs()
+        {
+            Log("Getting prefabs.");
+            foreach (var o in ObjectPool.instance.startupPools)
+            {
+                //Log(o.prefab.name);
+                if (_smallGeoPrefab == null && o.prefab.name == "Geo Small")
+                {
+                    _smallGeoPrefab = o.prefab;
+                    _smallGeoPrefab.SetActive(false);
+                    UnityEngine.Object.DontDestroyOnLoad(_smallGeoPrefab);
+                }
+                else if (_mediumGeoPrefab == null && o.prefab.name == "Geo Med")
+                {
+                    _mediumGeoPrefab = o.prefab;
+                    _mediumGeoPrefab.SetActive(false);
+                    UnityEngine.Object.DontDestroyOnLoad(_mediumGeoPrefab);
+                }
+                else if (_largeGeoPrefab == null && o.prefab.name == "Geo Large")
+                {
+                    _largeGeoPrefab = o.prefab;
+                    _largeGeoPrefab.SetActive(false);
+                    UnityEngine.Object.DontDestroyOnLoad(_largeGeoPrefab);
+                }
+                else if (_flukePrefab == null && o.prefab.name == "Spell Fluke")
+                {
+                    _flukePrefab = o.prefab;
+                    _flukePrefab.SetActive(false);
+                    UnityEngine.Object.DontDestroyOnLoad(_flukePrefab);
+                }
+
+                if (_smallGeoPrefab != null && _mediumGeoPrefab != null && _largeGeoPrefab != null && _flukePrefab != null)
+                    break;
+            }
+            //Log(_smallGeoPrefab != null ? "Small geo prefab found." : "Small geo prefab not found.");
+            //Log(_mediumGeoPrefab != null ? "Medium geo prefab found." : "Medium geo prefab not found.");
+            //Log(_largeGeoPrefab != null ? "Large geo prefab found." : "Large geo prefab not found.");
+            //Log(_flukePrefab != null ? "Fluke prefab found." : "Fluke prefab not found.");
+        }
         public override void Initialize()
         {
             Log("Initializing");
+
+            GetPrefabs();
 
 ////////////////////////////////////////////////////////////////
 //  DEBUG HOOKS
             #region Debug Hooks
             //ModHooks.AfterAttackHook += SlashToLog;
             //On.HealthManager.TakeDamage += DebugHitInstance;
+            On.HutongGames.PlayMaker.Actions.FireAtTarget.OnEnter += CrystalShotDebug;
             #endregion
 
 ////////////////////////////////////////////////////////////////
@@ -196,7 +252,6 @@ namespace CharmReValance
             On.BeginRecoil.OnEnter += BaldurShellKnockback;
             On.HeroController.AddHealth += BaldurShellOverheal;
             On.HutongGames.PlayMaker.Actions.PlayerDataIntAdd.OnEnter += BaldurShellGreedShell;
-            GetGeoPrefabs();
 
 //	Carefree Melody
             On.HeroController.TakeDamage += CarefreeMelodyBlockAndHeal;
@@ -229,21 +284,21 @@ namespace CharmReValance
             IL.HeroController.TakeDamage += DreamshieldBlockNoHitEffect;
             On.HutongGames.PlayMaker.Actions.SetScale.OnEnter += DreamshieldScaling;
 
-            //On.HutongGames.PlayMaker.Actions.SendEvent.OnEnter += DreamshieldDebugLogging;
+            On.HutongGames.PlayMaker.Actions.GetLayer.OnEnter += DreamshieldDebugLogging;
             On.PlayMakerFSM.OnEnable += DreamshieldFSMPrep;
 
 //	Flukenest
-            On.HutongGames.PlayMaker.Actions.FlingObjectsFromGlobalPool.OnEnter += FlukeCount;
+            IL.SpellFluke.OnEnable += FlukeDamageSizeLifetime;
+            On.HutongGames.PlayMaker.Actions.FlingObjectsFromGlobalPool.OnEnter += FlukenestCount;
             On.HealthManager.TakeDamage += FlukenestDCContactDamage;
-            On.HutongGames.PlayMaker.Actions.Wait.OnEnter += FlukenestDefendersCrestDurationAndDamage;
-            IL.SpellFluke.OnEnable += FlukenestEnableHook;
+            On.HutongGames.PlayMaker.Actions.Wait.OnEnter += FlukenestDCCloud;
 
 //	Fragile Charms
             On.HutongGames.PlayMaker.Actions.PlayerDataBoolTest.OnEnter += FragileCharmsBreak;
             IL.HealthManager.Die += GreedGeoIncrease;
             On.HeroController.AddGeo += GeoGrantsSoul;
             ILHeroController.orig_CharmUpdate += SetFragileHeartMasks;
-            ModHooks.GetPlayerIntHook += StrengthNailDamageIncrease;
+            //ModHooks.GetPlayerIntHook += StrengthNailDamageIncrease;
             On.HutongGames.PlayMaker.Actions.FloatMultiply.OnEnter += IgnoreVanillaStrengthDamage;
 
 //	Fury of the Fallen
@@ -285,7 +340,6 @@ namespace CharmReValance
             IL.HeroController.TakeDamage += GrubsongSoulChanges;
 
 //	Heavy Blow
-			ModHooks.GetPlayerIntHook += HeavyBlowNailDamageIncrease;
             On.HutongGames.PlayMaker.Actions.IntOperator.OnEnter += HeavyBlowStagger;
             On.HutongGames.PlayMaker.Actions.IntCompare.OnEnter += HeavyBlowComboStaggerFix;
             On.HutongGames.PlayMaker.Actions.IntOperator.OnEnter += HeavyBlowEnviroHit;
@@ -318,7 +372,6 @@ namespace CharmReValance
             On.PlayMakerFSM.OnEnable += OnFsmEnable;
             On.HutongGames.PlayMaker.Actions.SendMessage.OnEnter += WallSlashSizeScale;
             IL.NailSlash.StartSlash += NailSlashSizeScale;
-            ModHooks.GetPlayerIntHook += MarkOfPrideNailDamageIncrease;
 
 //	Nailmaster's Glory
             ILHeroController.orig_CharmUpdate += SetNailArtChargeTime;
@@ -379,10 +432,13 @@ namespace CharmReValance
             ILHeroController.orig_Update += SetDamageKnockback;
             On.HeroController.ShouldHardLand += SteadyBodyNegateHardFall;
             On.HeroController.TakeDamage += SteadyBodyMeteorDrop;
+            IL.HeroController.RecoilLeft += SteadyBodyRecoilL;
+            IL.HeroController.RecoilRight += SteadyBodyRecoilR;
 
 //	Thorns of Agony
             On.HutongGames.PlayMaker.Actions.SetFsmInt.OnEnter += ThornsOfAgonyDamage;
             On.HutongGames.PlayMaker.Actions.ActivateGameObject.OnEnter += ThornsOfAgonyRadius;
+            On.HutongGames.PlayMaker.Actions.ActivateGameObject.OnEnter += ThornsOfAgonyFlukes;
 
 //	Weaversong
             On.HutongGames.PlayMaker.Actions.IntOperator.OnEnter += WeaverlingAttack;
@@ -492,7 +548,11 @@ namespace CharmReValance
         {
             if (name == "nailDamage")
             {
-                orig = LS.regularNailDamageBase + (LS.regularNailDamageUpgrade * PlayerDataAccess.nailSmithUpgrades);
+                orig = LS.regularNailDamageBase + (LS.regularNailDamageUpgrade * PlayerDataAccess.nailSmithUpgrades)
+                    + (PlayerDataAccess.equippedCharm_25 ? LS.strengthNailDamageIncrease : 0) 
+                    + (PlayerDataAccess.equippedCharm_15 ? LS.heavyBlowNailDamageIncrease : 0)
+                    + (PlayerDataAccess.equippedCharm_13 ? LS.markOfPrideNailDamageIncrease : 0)
+                    + (furyActive ? LS.furyOfTheFallenNailDamageIncrease : 0);
             }
 
             return orig;
@@ -850,37 +910,6 @@ namespace CharmReValance
             }
 
             orig(self);
-        }
-        public void GetGeoPrefabs()
-        {
-            Log("Getting geo prefabs.");
-            foreach (var o in ObjectPool.instance.startupPools)
-            {
-                if (_smallGeoPrefab == null && o.prefab.name == "Geo Small")
-                {
-                    _smallGeoPrefab = o.prefab;
-                    _smallGeoPrefab.SetActive(false);
-                    UnityEngine.Object.DontDestroyOnLoad(_smallGeoPrefab);
-                }
-                else if (_mediumGeoPrefab == null && o.prefab.name == "Geo Med")
-                {
-                    _mediumGeoPrefab = o.prefab;
-                    _mediumGeoPrefab.SetActive(false);
-                    UnityEngine.Object.DontDestroyOnLoad(_mediumGeoPrefab);
-                }
-                else if (_largeGeoPrefab == null && o.prefab.name == "Geo Large")
-                {
-                    _largeGeoPrefab = o.prefab;
-                    _largeGeoPrefab.SetActive(false);
-                    UnityEngine.Object.DontDestroyOnLoad(_largeGeoPrefab);
-                }
-
-                if (_smallGeoPrefab != null && _mediumGeoPrefab != null && _largeGeoPrefab != null)
-                    break;
-            }
-            //Log(_smallGeoPrefab != null ? "Small geo prefab found." : "Small geo prefab not found.");
-            //Log(_mediumGeoPrefab != null ? "Medium geo prefab found." : "Medium geo prefab not found.");
-            //Log(_largeGeoPrefab != null ? "Large geo prefab found." : "Large geo prefab not found.");
         }
         private void ScatterGeoFromHero(int amount)
         {
@@ -1384,7 +1413,7 @@ namespace CharmReValance
 
             orig(self);
         }
-        private void DreamshieldDebugLogging(On.HutongGames.PlayMaker.Actions.SendEvent.orig_OnEnter orig, SendEvent self)
+        private void DreamshieldDebugLogging(On.HutongGames.PlayMaker.Actions.GetLayer.orig_OnEnter orig, GetLayer self)
         {
             orig(self);
 
@@ -1422,7 +1451,48 @@ namespace CharmReValance
 
 //	Flukenest
         #region Flukenest Changes
-        private void FlukeCount(On.HutongGames.PlayMaker.Actions.FlingObjectsFromGlobalPool.orig_OnEnter orig, FlingObjectsFromGlobalPool self)
+        private void FlukeDamageSizeLifetime(ILContext il)
+        {
+            ILCursor cursor = new ILCursor(il).Goto(0);
+
+            // Fluke Lifetime
+            cursor.TryGotoNext(i => i.MatchLdcR4(2f));
+            cursor.GotoNext();
+            cursor.EmitDelegate<Func<float, float>>(minimum => LS.flukeLifetimeMin);
+
+            cursor.TryGotoNext(i => i.MatchLdcR4(3f));
+            cursor.GotoNext();
+            cursor.EmitDelegate<Func<float, float>>(maximum => LS.flukeLifetimeMax);
+
+            // Shaman Stone Sizes
+            cursor.TryGotoNext(i => i.MatchLdcR4(0.9f));
+            cursor.GotoNext();
+            cursor.EmitDelegate<Func<float, float>>(minimum => LS.flukeShamanStoneSizeMin);
+
+            cursor.TryGotoNext(i => i.MatchLdcR4(1.2f));
+            cursor.GotoNext();
+            cursor.EmitDelegate<Func<float, float>>(maximum => LS.flukeShamanStoneSizeMax);
+
+            // Shaman Stone Damage
+            cursor.TryGotoNext(i => i.MatchLdcI4(5));
+            cursor.GotoNext();
+            cursor.EmitDelegate<Func<int, int>>(damage => LS.flukeShamanStoneDamage + (furyActive ? LS.flukeFotFDamageIncrease : 0));
+
+            // Regular Sizes
+            cursor.TryGotoNext(i => i.MatchLdcR4(0.7f));
+            cursor.GotoNext();
+            cursor.EmitDelegate<Func<float, float>>(minimum => LS.flukeSizeMin);
+
+            cursor.TryGotoNext(i => i.MatchLdcR4(0.9f));
+            cursor.GotoNext();
+            cursor.EmitDelegate<Func<float, float>>(maximum => LS.flukeSizeMax);
+
+            // Regular Damage
+            cursor.TryGotoNext(i => i.MatchLdcI4(4));
+            cursor.GotoNext();
+            cursor.EmitDelegate<Func<int, int>>(damage => LS.flukeDamage + (furyActive ? LS.flukeFotFDamageIncrease : 0));
+        }
+        private void FlukenestCount(On.HutongGames.PlayMaker.Actions.FlingObjectsFromGlobalPool.orig_OnEnter orig, FlingObjectsFromGlobalPool self)
         {
             // Vengeful Spirit
             if(self.Fsm.GameObject.name == "Fireball Top(Clone)" && self.Fsm.Name == "Fireball Cast" && self.State.Name == "Flukes")
@@ -1456,7 +1526,7 @@ namespace CharmReValance
 
             orig(self, hitInstance);
         }
-        private void FlukenestDefendersCrestDurationAndDamage(On.HutongGames.PlayMaker.Actions.Wait.orig_OnEnter orig, Wait self)
+        private void FlukenestDCCloud(On.HutongGames.PlayMaker.Actions.Wait.orig_OnEnter orig, Wait self)
         {
             //Log(self.Fsm.GameObject.name + "-" + self.Fsm.Name + "   " + self.State.Name);
             if (self.Fsm.GameObject.name.StartsWith("Spell Fluke Dung") && self.Fsm.Name == "Control" && self.State.Name == "Blow")
@@ -1501,38 +1571,6 @@ namespace CharmReValance
             }
 
             orig(self);
-        }
-        private void FlukenestEnableHook(ILContext il)
-        {
-            ILCursor cursor = new ILCursor(il).Goto(0);
-
-            // Shaman Stone Sizes
-            cursor.TryGotoNext(i => i.MatchLdcR4(0.9f));
-            cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(minimum => LS.flukenestShamanStoneFlukeSizeMin);
-
-            cursor.TryGotoNext(i => i.MatchLdcR4(1.2f));
-            cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(maximum => LS.flukenestShamanStoneFlukeSizeMax);
-
-            // Shaman Stone Damage
-            cursor.TryGotoNext(i => i.MatchLdcI4(5));
-            cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(damage => LS.flukenestShamanStoneDamage + (furyActive ? LS.flukenestFotFDamageIncrease : 0));
-
-            // Regular Sizes
-            cursor.TryGotoNext(i => i.MatchLdcR4(0.7f));
-            cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(minimum => LS.flukenestFlukeSizeMin);
-
-            cursor.TryGotoNext(i => i.MatchLdcR4(0.9f));
-            cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(maximum => LS.flukenestFlukeSizeMax);
-
-            // Regular Damage
-            cursor.TryGotoNext(i => i.MatchLdcI4(4));
-            cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(damage => LS.flukenestDamage + (furyActive ? LS.flukenestFotFDamageIncrease : 0));
         }
         #endregion
 
@@ -1583,15 +1621,6 @@ namespace CharmReValance
                 cursor.GotoNext();
                 cursor.EmitDelegate<Func<int, int>>(masks => LS.heartMasks);
             }
-        }
-        //	Strength Nail Damage Increase
-        private int StrengthNailDamageIncrease(string name, int orig)
-        {
-            if (name == "nailDamage") {
-                orig = (int)(orig + (PlayerDataAccess.equippedCharm_25 ? LS.strengthNailDamageIncrease : 0));
-            }
-			
-            return orig;
         }
 		//	Ignore vanilla Strength damage multiplier
         private void IgnoreVanillaStrengthDamage(On.HutongGames.PlayMaker.Actions.FloatMultiply.orig_OnEnter orig, FloatMultiply self)
@@ -1645,7 +1674,7 @@ namespace CharmReValance
             if (set != furyActive)
             {
                 furyActive = set;
-                PlayerData.instance.nailDamage += set ? LS.furyOfTheFallenNailDamageIncrease : -LS.furyOfTheFallenNailDamageIncrease;
+                //PlayerData.instance.nailDamage += set ? LS.furyOfTheFallenNailDamageIncrease : -LS.furyOfTheFallenNailDamageIncrease;
                 PlayMakerFSM.BroadcastEvent("UPDATE NAIL DAMAGE");
                 //Log("Nail Damage set to " + PlayerData.instance.nailDamage);
             }
@@ -2025,15 +2054,6 @@ namespace CharmReValance
 
 //	Heavy Blow
         #region Heavy Blow Changes
-		//	Nail Damage Increase
-		private int HeavyBlowNailDamageIncrease(string name, int orig)
-        {
-            if (name == "nailDamage") {
-                orig = (int)(orig + (PlayerDataAccess.equippedCharm_15 ? LS.heavyBlowNailDamageIncrease : 0));
-            }
-
-            return orig;
-        }
 		//	Stagger Improvement
         private void HeavyBlowStagger(On.HutongGames.PlayMaker.Actions.IntOperator.orig_OnEnter orig, IntOperator self)
         {
@@ -2419,15 +2439,6 @@ namespace CharmReValance
 
 //	Longnail / Mark of Pride
         #region Longnail / Mark of Pride Changes
-        //	Mark of Pride Nail Damage Increase
-        private int MarkOfPrideNailDamageIncrease(string name, int orig)
-        {
-            if (name == "nailDamage") {
-                orig = (int)(orig + (PlayerDataAccess.equippedCharm_13 ? LS.markOfPrideNailDamageIncrease : 0));
-            }
-
-            return orig;
-        }
         private void NailSlashSizeScale(ILContext il)
         {
             ILCursor cursor = new ILCursor(il).Goto(0);
@@ -3220,6 +3231,7 @@ namespace CharmReValance
             }
             else { PlayerData.instance.focusMP_amount = LS.regularFocusCost; }
         }
+        //  Reduce damage knockback
         private void SetDamageKnockback(ILContext il)
         {
             ILCursor cursor = new ILCursor(il).Goto(0);
@@ -3261,10 +3273,26 @@ namespace CharmReValance
 
             orig(self, go, damageSide, damageAmount, hazardType);
         }
+        //  Nail recoil
+        private void SteadyBodyRecoilL(ILContext il)
+        {
+            ILCursor cursor = new ILCursor(il).Goto(0);
+            cursor.TryGotoNext(i => i.MatchLdstr("equippedCharm_14"));
+            cursor.GotoNext();
+            cursor.GotoNext();
+            cursor.EmitDelegate<Func<bool, bool>>(equipped => (LS.steadyBodyNegateNailRecoil && PlayerDataAccess.equippedCharm_14));
+        }
+        private void SteadyBodyRecoilR(ILContext il)
+        {
+            ILCursor cursor = new ILCursor(il).Goto(0);
+            cursor.TryGotoNext(i => i.MatchLdstr("equippedCharm_14"));
+            cursor.GotoNext();
+            cursor.GotoNext();
+            cursor.EmitDelegate<Func<bool, bool>>(equipped => (LS.steadyBodyNegateNailRecoil && PlayerDataAccess.equippedCharm_14));
+        }
         #endregion
 
 //	Thorns of Agony
-//  TODO: synergy w/ flukenest to spray flukes
         #region Thorns of Agony Changes
         private void ThornsOfAgonyDamage(On.HutongGames.PlayMaker.Actions.SetFsmInt.orig_OnEnter orig, SetFsmInt self)
         {
@@ -3297,11 +3325,56 @@ namespace CharmReValance
                 self.Fsm.Variables.GetFsmGameObject("Thorn Hit").Value.transform.SetScaleX(thornsRadius);
                 self.Fsm.Variables.GetFsmGameObject("Thorn Hit").Value.transform.SetScaleY(thornsRadius);
                 //Log("Thorns radius: " + thornsRadius);
-
-                //  Animation can't be scaled. Instead figure out how to have a burst of thorn projectiles.
             }
 
             orig(self);
+        }
+        private void ThornsOfAgonyFlukes(On.HutongGames.PlayMaker.Actions.ActivateGameObject.orig_OnEnter orig, ActivateGameObject self)
+        {
+            orig(self);
+
+            if (self.Fsm.GameObject.name == "Charm Effects" && self.Fsm.Name == "Thorn Counter" && self.State.Name == "Counter")
+            {
+                //  Flukenest synergy flings flukes
+                if (PlayerDataAccess.equippedCharm_11)
+                {
+                    int fullHealth = PlayerData.instance.maxHealth + (PlayerDataAccess.equippedCharm_27 ? PlayerDataAccess.joniHealthBlue : 0);
+                    int currentHealth = PlayerDataAccess.health + (PlayerDataAccess.equippedCharm_27 ? PlayerDataAccess.healthBlue : 0);
+                    int missingHealth = Math.Max(fullHealth - currentHealth, 1);
+                    int numFlukes = Math.Max(2 + missingHealth, 3) * 2;
+
+                    FlingFlukesFromHero(numFlukes);
+                }
+            }
+        }
+        private void FlingFlukesFromHero(int num)
+        {
+            float angleMin = 60f;
+            float angleMax = 120f;
+            float speedMin = 14f;
+            float speedMax = 22f;
+
+            GameObject[] gameObjects = FlingUtils.SpawnAndFling(new FlingUtils.Config
+            {
+                Prefab = _flukePrefab,
+                AmountMin = num,
+                AmountMax = num,
+                SpeedMin = speedMin,
+                SpeedMax = speedMax,
+                AngleMin = angleMin,
+                AngleMax = angleMax
+            }, HeroController.instance.transform, Vector3.zero);
+            //  Fling black flukes if Shade Cloak or Void Heart acquired
+            //if (PlayerDataAccess.hasShadowDash || (PlayerDataAccess.equippedCharm_36 && PlayerDataAccess.royalCharmState == 4))
+            //{
+            //    foreach (var o in gameObjects)
+            //    {
+            //        var component = o.GetComponent<SpellFluke>();
+            //        component.airAnim = "Air Black";
+            //        component.flopAnim = "Flop Black";
+            //    }
+            //}
+            Log(gameObjects.Length + " flukes created.");
         }
         #endregion
 

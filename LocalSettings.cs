@@ -188,15 +188,17 @@ namespace CharmReValance
 
 //	Flukenest
         private static readonly int defaultCharm11NotchCost = 2;
-        private static readonly int defaultFlukenestDamage = 3;
-        private static readonly int defaultFlukenestShamanStoneDamage = 4;
-		private static readonly int defaultFlukenestFotFDamageIncrease = 2;
+		private static readonly float defaultFlukeLifetimeMin = 4f;	//	vanilla: 2f
+		private static readonly float defaultFlukeLifetimeMax = 5f;	//	vanilla: 3f
+        private static readonly int defaultFlukeDamage = 3;
+        private static readonly int defaultFlukeShamanStoneDamage = 4;
+		private static readonly int defaultFlukeFotFDamageIncrease = 2;
         private static readonly int defaultFlukenestVSFlukes = 9;
         private static readonly int defaultFlukenestSSFlukes = 16;
-        private static readonly float defaultFlukenestFlukeSizeMin = 0.7f;
-        private static readonly float defaultFlukenestFlukeSizeMax = 0.9f;
-        private static readonly float defaultFlukenestShamanStoneFlukeSizeMin = 0.9f;
-        private static readonly float defaultFlukenestShamanStoneFlukeSizeMax = 1.2f;
+        private static readonly float defaultFlukeSizeMin = 0.7f;
+        private static readonly float defaultFlukeSizeMax = 0.9f;
+        private static readonly float defaultFlukeShamanStoneSizeMin = 0.9f;
+        private static readonly float defaultFlukeShamanStoneSizeMax = 1.2f;
         private static readonly int defaultFlukenestDefendersCrestVSDamage = 15;
         private static readonly int defaultFlukenestDefendersCrestSSDamage = 25;
         private static readonly float defaultFlukenestDefendersCrestDamageRate = 0.24f;
@@ -446,6 +448,7 @@ namespace CharmReValance
 		private static readonly int defaultSteadyBodyFocusCost = 24;
 		private static readonly float defaultSteadyBodyKnockback = 0.08f;
 		private static readonly bool defaultSteadyBodyNegateHardFall = true;
+		private static readonly bool defaultSteadyBodyNegateNailRecoil = false;
 		private static readonly int defaultSteadyBodyDefendersCrestImpactDamage = 25;
 		private static readonly int defaultSteadyBodyShapeOfUnnFocusCost = 22;
 
@@ -982,15 +985,21 @@ namespace CharmReValance
             dreamshieldLifebloodHeartOverhealMaxIncrease = defaultDreamshieldLifebloodHeartOverhealMaxIncrease;
         }
 
-        //	Flukenest
+//	Flukenest
         [SliderIntElement("Flukenest", "Notch Cost", 0, 5)]
         public int charm11NotchCost = defaultCharm11NotchCost;
 
+        [InputFloatElement("Flukenest", "Fluke Min Lifetime", 0.1f, 20f)]
+		public float flukeLifetimeMin = defaultFlukeLifetimeMin;
+
+        [InputFloatElement("Flukenest", "Fluke Max Lifetime", 0.1f, 20f)]
+		public float flukeLifetimeMax = defaultFlukeLifetimeMax;
+
         [InputIntElement("Flukenest", "Fluke Damage", 0, 10)]
-        public int flukenestDamage = defaultFlukenestDamage;
+        public int flukeDamage = defaultFlukeDamage;
 
         [InputIntElement("Flukenest", "FotF Damage Increase", 0, 10)]
-		public int flukenestFotFDamageIncrease = defaultFlukenestFotFDamageIncrease;
+		public int flukeFotFDamageIncrease = defaultFlukeFotFDamageIncrease;
 
         [InputIntElement("Flukenest", "Vengeful Spirit Flukes", 0, 36)]
         public int flukenestVSFlukes = defaultFlukenestVSFlukes;
@@ -999,19 +1008,19 @@ namespace CharmReValance
         public int flukenestSSFlukes = defaultFlukenestSSFlukes;
 
         //[InputFloatElement("Flukenest", "Fluke Min Size", 0f, 3f)]
-        public float flukenestFlukeSizeMin = defaultFlukenestFlukeSizeMin;
+        public float flukeSizeMin = defaultFlukeSizeMin;
 
         //[InputFloatElement("Flukenest", "Fluke Max Size", 0f, 3f)]
-        public float flukenestFlukeSizeMax = defaultFlukenestFlukeSizeMax;
+        public float flukeSizeMax = defaultFlukeSizeMax;
 
         [InputIntElement("Flukenest", "Shaman Stone Fluke Damage", 0, 10)]
-        public int flukenestShamanStoneDamage = defaultFlukenestShamanStoneDamage;
+        public int flukeShamanStoneDamage = defaultFlukeShamanStoneDamage;
 
         //[InputFloatElement("Flukenest", "Shaman Stone Fluke Min Size", 0f, 3f)]
-        public float flukenestShamanStoneFlukeSizeMin = defaultFlukenestShamanStoneFlukeSizeMin;
+        public float flukeShamanStoneSizeMin = defaultFlukeShamanStoneSizeMin;
 
         //[InputFloatElement("Flukenest", "Shaman Stone Fluke Max Size", 0f, 3f)]
-        public float flukenestShamanStoneFlukeSizeMax = defaultFlukenestShamanStoneFlukeSizeMax;
+        public float flukeShamanStoneSizeMax = defaultFlukeShamanStoneSizeMax;
 
         [InputIntElement("Flukenest", "Defender's Crest VS Damage", 0, 100)]
         public int flukenestDefendersCrestVSDamage = defaultFlukenestDefendersCrestVSDamage;
@@ -1047,15 +1056,17 @@ namespace CharmReValance
         public void ResetFlukenest()
         {
 			charm11NotchCost = defaultCharm11NotchCost;
-			flukenestDamage = defaultFlukenestDamage;
-			flukenestFotFDamageIncrease = defaultFlukenestFotFDamageIncrease;
+			flukeLifetimeMin = defaultFlukeLifetimeMin;
+			flukeLifetimeMax = defaultFlukeLifetimeMax;
+			flukeDamage = defaultFlukeDamage;
+			flukeFotFDamageIncrease = defaultFlukeFotFDamageIncrease;
 			flukenestVSFlukes = defaultFlukenestVSFlukes;
 			flukenestSSFlukes = defaultFlukenestSSFlukes;
-			flukenestFlukeSizeMin = defaultFlukenestFlukeSizeMin;
-			flukenestFlukeSizeMax = defaultFlukenestFlukeSizeMax;
-			flukenestShamanStoneDamage = defaultFlukenestShamanStoneDamage;
-			flukenestShamanStoneFlukeSizeMin = defaultFlukenestShamanStoneFlukeSizeMin;
-			flukenestShamanStoneFlukeSizeMax = defaultFlukenestShamanStoneFlukeSizeMax;
+			flukeSizeMin = defaultFlukeSizeMin;
+			flukeSizeMax = defaultFlukeSizeMax;
+			flukeShamanStoneDamage = defaultFlukeShamanStoneDamage;
+			flukeShamanStoneSizeMin = defaultFlukeShamanStoneSizeMin;
+			flukeShamanStoneSizeMax = defaultFlukeShamanStoneSizeMax;
 			flukenestDefendersCrestVSDamage = defaultFlukenestDefendersCrestVSDamage;
 			flukenestDefendersCrestSSDamage = defaultFlukenestDefendersCrestSSDamage;
 			flukenestDefendersCrestDamageRate = defaultFlukenestDefendersCrestDamageRate;
@@ -1942,6 +1953,9 @@ namespace CharmReValance
         [BoolElement("Steady Body", "Negate Hard Falls", "")]
 		public bool steadyBodyNegateHardFall = defaultSteadyBodyNegateHardFall;
 		
+        [BoolElement("Steady Body", "Negate Nail Recoil", "")]
+		public bool steadyBodyNegateNailRecoil = defaultSteadyBodyNegateNailRecoil;
+
         [InputIntElement("Steady Body", "Defender's Crest Impact Damage", 0, 200)]
 		public int steadyBodyDefendersCrestImpactDamage = defaultSteadyBodyDefendersCrestImpactDamage;
 		
@@ -1955,6 +1969,7 @@ namespace CharmReValance
 			steadyBodyFocusCost = defaultSteadyBodyFocusCost;
 			steadyBodyKnockback = defaultSteadyBodyKnockback;
 			steadyBodyNegateHardFall = defaultSteadyBodyNegateHardFall;
+			steadyBodyNegateNailRecoil = defaultSteadyBodyNegateNailRecoil;
 			steadyBodyDefendersCrestImpactDamage = defaultSteadyBodyDefendersCrestImpactDamage;
 			steadyBodyShapeOfUnnFocusCost = defaultSteadyBodyShapeOfUnnFocusCost;
         }
