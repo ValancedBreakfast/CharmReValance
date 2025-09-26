@@ -216,6 +216,7 @@ namespace CharmReValance
             ModHooks.AfterTakeDamageHook += IFramesNegateHazardDamage;
             On.HutongGames.PlayMaker.Actions.SetFloatValue.OnEnter += FocusSpeed;
             On.HutongGames.PlayMaker.Actions.SetIntValue.OnEnter += FocusHealAmount;
+            IL.ExtraDamageable.RecieveExtraDamage += AllowMultipleTickDamagePerFrame;
 
 //  Nail
             ModHooks.GetPlayerIntHook += RegularNailDamage;
@@ -539,6 +540,13 @@ namespace CharmReValance
             }
 
             orig(self);
+        }
+        private void AllowMultipleTickDamagePerFrame(ILContext il)
+        {
+            ILCursor cursor = new ILCursor(il).Goto(0);
+            cursor.TryGotoNext(i => i.MatchLdfld<ExtraDamageable>("damagedThisFrame"));
+            cursor.GotoNext();
+            cursor.EmitDelegate<Func<bool, bool>>(damaged => false);
         }
         #endregion
 
@@ -3001,7 +3009,7 @@ namespace CharmReValance
         private void SporeShroomDamageDuration(On.HutongGames.PlayMaker.Actions.Wait.orig_OnEnter orig, Wait self)
         {
             // Spore Shroom Cloud
-            if (self.Fsm.GameObject.name == "Knight Spore Cloud(Clone)" && self.Fsm.Name == "Control" && self.State.Name == "Wait")
+            if (self.Fsm.GameObject.name.StartsWith("Knight Spore Cloud") && self.Fsm.Name == "Control" && self.State.Name == "Wait")
             {
                 float upgradeRate = (PlayerDataAccess.MPReserveMax + (11 * PlayerDataAccess.vesselFragments)) / 132f;
 
@@ -3014,12 +3022,12 @@ namespace CharmReValance
                 float damage = LS.sporeShroomDamageBase + ((LS.sporeShroomDamageMax - LS.sporeShroomDamageBase) * upgradeRate);
                 if (PlayerDataAccess.equippedCharm_10)
                     damage = LS.sporeShroomDefendersCrestDamageBase + ((LS.sporeShroomDefendersCrestDamageMax - LS.sporeShroomDefendersCrestDamageBase) * upgradeRate);
-                self.Fsm.GameObject.GetComponent<DamageEffectTicker>().damageInterval = duration / (damage + 0.0f); //  +0.9f ensures time works out
+                self.Fsm.GameObject.GetComponent<DamageEffectTicker>().damageInterval = duration / (damage + 0.5f); //  +0.5f ensures time works out
                 //Log("Spore cloud damage: " + damage);
             }
 
             //  Spore Shroom + Defender's Crest Cloud
-            else if (self.Fsm.GameObject.name == "Knight Dung Cloud(Clone)" && self.Fsm.Name == "Control" && self.State.Name == "Wait")
+            else if (self.Fsm.GameObject.name.StartsWith("Knight Dung Cloud") && self.Fsm.Name == "Control" && self.State.Name == "Wait")
             {
                 float upgradeRate = (PlayerDataAccess.MPReserveMax + (11 * PlayerDataAccess.vesselFragments)) / 132f;
 
@@ -3032,7 +3040,7 @@ namespace CharmReValance
                 float damage = LS.sporeShroomDamageBase + ((LS.sporeShroomDamageMax - LS.sporeShroomDamageBase) * upgradeRate);
                 if (PlayerDataAccess.equippedCharm_10)
                     damage = LS.sporeShroomDefendersCrestDamageBase + ((LS.sporeShroomDefendersCrestDamageMax - LS.sporeShroomDefendersCrestDamageBase) * upgradeRate);
-                self.Fsm.GameObject.GetComponent<DamageEffectTicker>().damageInterval = duration / (damage + 0.0f); //  +0.9f ensures time works out
+                self.Fsm.GameObject.GetComponent<DamageEffectTicker>().damageInterval = duration / (damage + 0.5f); //  +0.5f ensures time works out
                 //Log("Spore cloud damage: " + damage);
 
                 var damageTicker = self.Fsm.GameObject.GetComponent<DamageEffectTicker>();
