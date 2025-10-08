@@ -1,13 +1,9 @@
 ﻿using HKMirror;
 using System.Collections.Generic;
 
-//	TODO
-//	+ Add new charm: Rending Nightmare that makes dream nail deal damage
-//	+ DamageValues mod not showing grimmchild, weaverlings, damage ticker
-
 namespace CharmReValance
 {
-    public class LocalSettings
+    public class GlobalSettings
     {
 		#region DefaultAbilitySettings
 ////////////////////////////////////////////////////////////////
@@ -70,6 +66,7 @@ namespace CharmReValance
 //	Default Dream Nail Settings
         private static readonly int defaultDreamNailSoulGain = 33;
 		private static readonly float defaultDreamNailRange = 1f;
+		private static readonly float defaultDreamNailHeight = 1.4f;
 		private static readonly int defaultEssenceChanceLow = 300;	//	vanilla 300
         private static readonly int defaultEssenceChanceHigh = 20;  //	vanilla 60
 
@@ -160,30 +157,30 @@ namespace CharmReValance
 		private static readonly float defaultDefendersCrestFrequency = 0.6f;
 		private static readonly float defaultDefendersCrestDuration = 1.1f;
 		private static readonly float defaultDefendersCrestRadius = 1f;
-        private static readonly float defaultDefendersCrestDamageRate = 0.24f;
+        private static readonly float defaultDefendersCrestDamage = 4.5f;
 		private static readonly float defaultDefendersCrestSteadyBodyRadius = 1.2f;
 		private static readonly float defaultDefendersCrestSteadyBodyDuration = 1.4f;
-		private static readonly float defaultDefendersCrestFotFDamageRate = 0.18f;
+		private static readonly float defaultDefendersCrestFotFDamage = 6.0f;
 
 //	Dream Wielder
         private static readonly int defaultCharm30NotchCost = 1;
         private static readonly int defaultDreamWielderSoulGain = 33;
         private static readonly int defaultDreamWielderEssenceChanceLow = 100;	//	vanilla 200
         private static readonly int defaultDreamWielderEssenceChanceHigh = 5;	//	vanilla 40
-		private static readonly float defaultDreamWielderSpellTwisterRange = 1.25f;
 
 //	Dreamshield
-        private static readonly int defaultCharm38NotchCost = 2;
+        private static readonly int defaultCharm38NotchCost = 3;
 		private static readonly int defaultDreamshieldOverheal = 1;
 		private static readonly bool defaultDreamshieldBlocksBehind = true;
-		private static readonly int defaultDreamshieldBaseDamage = 5;
+		private static readonly int defaultDreamshieldBaseDamage = 8;
 		private static readonly int defaultDreamshieldDamageScaleRate = 100;
 		private static readonly float defaultDreamshieldKnockback = 1.5f;
-        private static readonly float defaultDreamshieldReformationTime = 3.6f;
+        private static readonly float defaultDreamshieldReformationTime = 6.4f;
         private static readonly float defaultDreamshieldSizeScale = 0.75f;
 		private static readonly float defaultDreamshieldOverheadOffset = 30f;
-		private static readonly float defaultDreamshieldTweenSpeed = 20f;		
-		private static readonly float defaultDreamshieldDefendersCrestReformTime = 2.4f;
+		private static readonly float defaultDreamshieldTweenSpeed = 20f;
+		private static readonly float defaultDreamshieldDefendersCrestReformTimeReduction = 1.2f;
+		private static readonly float defaultDreamshieldDreamWielderReformTimeReduction = 1.6f;
 		private static readonly int defaultDreamshieldLifebloodHeartOverhealMaxIncrease = 1;
 
 //	Flukenest
@@ -199,16 +196,18 @@ namespace CharmReValance
         private static readonly float defaultFlukeSizeMax = 0.9f;
         private static readonly float defaultFlukeShamanStoneSizeMin = 0.9f;
         private static readonly float defaultFlukeShamanStoneSizeMax = 1.2f;
-        private static readonly int defaultFlukenestDefendersCrestVSDamage = 15;
-        private static readonly int defaultFlukenestDefendersCrestSSDamage = 25;
-        private static readonly float defaultFlukenestDefendersCrestDamageRate = 0.24f;
-        private static readonly float defaultFlukenestDefendersCrestDuration = 3.6f;
-        private static readonly float defaultFlukenestDefendersCrestRadius = 5.4f;
-        private static readonly int defaultFlukenestDCShamanStoneVSDamage = 20;
-        private static readonly int defaultFlukenestDCShamanStoneSSDamage = 30;
-        private static readonly float defaultFlukenestDCShamanStoneDamageRate = 0.18f;
-        private static readonly float defaultFlukenestDCShamanStoneDuration = 3.6f;
-        private static readonly float defaultFlukenestDCShamanStoneRadius = 7.2f;
+        private static readonly int defaultVolatileFlukeLv1ContactDamage = 8;
+        private static readonly int defaultVolatileFlukeLv2ContactDamage = 13;
+        private static readonly float defaultVolatileFlukeLv1CloudDamage = 19f;
+        private static readonly float defaultVolatileFlukeLv2CloudDamage = 35f;
+        private static readonly float defaultVolatileFlukeCloudDuration = 3.6f;
+        private static readonly float defaultVolatileFlukeCloudRadius = 5.4f;
+        private static readonly int defaultVolatileFlukeShamanStoneLv1ContactDamage = 10;
+        private static readonly int defaultVolatileFlukeShamanStoneLv2ContactDamage = 18;
+        private static readonly float defaultVolatileFlukeShamanStoneLv1CloudDamage = 26f;
+        private static readonly float defaultVolatileFlukeShamanStoneLv2CloudDamage = 46f;
+        private static readonly float defaultVolatileFlukeShamanStoneCloudDuration = 3.6f;
+        private static readonly float defaultVolatileFlukeShamanStoneCloudRadius = 7.2f;
 
 //	Fragile Charms
         private static readonly bool defaultFragileCharmsBreak = true;
@@ -229,9 +228,9 @@ namespace CharmReValance
 //	Fury of the Fallen
         private static readonly int defaultCharm6NotchCost = 2;
 		private static readonly bool defaultFuryOfTheFallenOvercharmed = true;
-		private static readonly float defaultFuryOfTheFallenThreshold = 0.399f;
+		private static readonly float defaultFuryOfTheFallenThreshold = 0.499f;
         private static readonly int defaultFuryOfTheFallenNailDamageIncrease = 6;
-		private static readonly float defaultFuryOfTheFallenNailCooldownReduction = 0.08f;
+		private static readonly float defaultFuryOfTheFallenNailCooldownReduction = 0.1f;
 		private static readonly int defaultFuryOfTheFallenVSDamageIncrease = 10;
 		private static readonly int defaultFuryOfTheFallenSSDamageIncrease = 10;
 		private static readonly int defaultFuryOfTheFallenHWDamageIncrease = 5;
@@ -248,23 +247,24 @@ namespace CharmReValance
         private static readonly int defaultCharm22NotchCost = 2;
 		private static readonly bool defaultGlowingWombPiercing = true;
         private static readonly float defaultGlowingWombSpawnRate = 4f;
-        private static readonly int defaultGlowingWombSpawnCost = 24;
+        private static readonly int defaultGlowingWombSpawnCost = 20;
         private static readonly int defaultGlowingWombSpawnTotal = 2;
         private static readonly int defaultGlowingWombDamage = 15;
-        private static readonly float defaultGlowingWombGatheringSwarmSpawnRate = 3f;
+        private static readonly float defaultGlowingWombGatheringSwarmSpawnRate = 2.8f;
         private static readonly int defaultGlowingWombGatheringSwarmCostReduction = 6;
         private static readonly int defaultGlowingWombGatheringSwarmSpawnTotal = 3;
 		private static readonly int defaultGlowingWombGatheringSwarmDamageReduction = 3;
 		private static readonly int defaultGlowingWombFotFDamageIncrease = 8;
 		private static readonly int defaultGlowingWombFlukenestDamageIncrease = 5;
 		private static readonly int defaultGlowingWombCarefreeMelodyCostReduction = 6;
-        private static readonly int defaultGlowingWombDefendersCrestDamage = 3;
+        private static readonly int defaultGlowingWombDefendersCrestDamage = 1;
         private static readonly float defaultGlowingWombDefendersCrestDuration = 2.8f;
         private static readonly float defaultGlowingWombDefendersCrestRadius = 5.4f;
-        private static readonly float defaultGlowingWombDefendersCrestDamageRate = 0.18f;
+        private static readonly float defaultGlowingWombDefendersCrestCloudDamage = 19f;
+        private static readonly float defaultGlowingWombDefendersCrestFotFDuration = 1.1f;
 
 //	Grimmchild
-		private static readonly int defaultCharmGrimmchildNotchCost = 3;
+		private static readonly int defaultCharmGrimmchildNotchCost = 2;
         private static readonly float defaultGrimmchildAttackTimer = 3.6f;
 		private static readonly float defaultGrimmchildRange = 1.0f;
 		private static readonly float defaultGrimmchildProjectileSpeed = 30f;	//	vanilla: 30f
@@ -275,6 +275,8 @@ namespace CharmReValance
         private static readonly int defaultGrimmchildDamage4 = 25;
 		private static readonly float defaultGrimmchildGatheringSwarmAttackTimer = 2.4f;
 		private static readonly int defaultGrimmchildFlukenestDamageIncrease = 7;
+		private static readonly int defaultDreamNailBaseDamage = 8;
+		private static readonly int defaultDreamNailDamageScaleRate = 100;		
 
 //	Grubberfly's Elegy
         private static readonly int defaultCharm35NotchCost = 3;
@@ -301,7 +303,7 @@ namespace CharmReValance
 		private static readonly int defaultHeavyBlowEnviroHits = 3;
         private static readonly float defaultHeavyBlowGreatSlashKnockback = 4.0f;
         private static readonly float defaultHeavyBlowDashSlashKnockback = 4.0f;
-		private static readonly float defaultHeavyBlowSteadyBodyNailCooldownReduction = 0.08f;
+		private static readonly float defaultHeavyBlowSteadyBodyNailCooldownReduction = 0.1f;
 
 //	Hiveblood
         private static readonly int defaultCharm29NotchCost = 3;
@@ -410,6 +412,7 @@ namespace CharmReValance
         private static readonly int defaultCharm33NotchCost = 2;
         private static readonly int defaultSpellTwisterSpellCost = 24;
 		private static readonly int defaultSpellTwisterShapeOfUnnSpellCost = 22;
+		private static readonly float defaultSpellTwisterDreamNailRange = 1.25f;
 
 //	Spore Shroom
         private static readonly int defaultCharm17NotchCost = 1;
@@ -472,13 +475,14 @@ namespace CharmReValance
 //	Weaversong
         private static readonly int defaultCharm39NotchCost = 2;
         private static readonly int defaultWeaversongCount = 3;
-        private static readonly int defaultWeaversongDamage = 3;
-        private static readonly int defaultWeaversongSoulGain = 1;
+        private static readonly int defaultWeaversongDamage = 2;
+        private static readonly int defaultWeaversongSoulGain = 2;
         private static readonly float defaultWeaversongSpeedMin = 6f;
         private static readonly float defaultWeaversongSpeedMax = 10f;
 		private static readonly int defaultWeaversongGatheringSwarmCount = 5;
-		private static readonly int defaultWeaversongGatheringSwarmDamageReduction = 2;
-		private static readonly int defaultWeaversongFlukenestDamageIncrease = 2;
+		private static readonly int defaultWeaversongGatheringSwarmDamageReduction = 1;
+		private static readonly int defaultWeaversongFlukenestDamageIncrease = 3;
+		private static readonly int defaultWeaversongFlukenestSoulReduction = 1;
         private static readonly int defaultWeaversongGrubsongSoulGain = 1;
 		private static readonly int defaultWeaversongCarefreeMelodyDamageIncrease = 1;
         private static readonly int defaultWeaversongCarefreeMelodySoulGain = 1;
@@ -716,6 +720,9 @@ namespace CharmReValance
         [InputFloatElement("Dream Nail Settings", "Range", 0f, 5f)]
 		public float regularDreamNailRange = defaultDreamNailRange;
 		
+        [InputFloatElement("Dream Nail Settings", "Height", 0f, 5f)]
+		public float regularDreamNailHeight = defaultDreamNailHeight;
+		
         [InputIntElement("Dream Nail Settings", "Essence Chance Low (1/X)", 0, 1000)]
 		public int regularEssenceChanceLow = defaultEssenceChanceLow;
 
@@ -727,6 +734,7 @@ namespace CharmReValance
         {
 			regularDreamNailSoulGain = defaultDreamNailSoulGain;
 			regularDreamNailRange = defaultDreamNailRange;
+			regularDreamNailHeight = defaultDreamNailHeight;
 			regularEssenceChanceLow = defaultEssenceChanceLow;
 			regularEssenceChanceHigh = defaultEssenceChanceHigh;
         }
@@ -879,8 +887,8 @@ namespace CharmReValance
         [InputFloatElement("Defender's Crest", "Cloud Radius", 0f, 2f)]
 		public float defendersCrestRadius = defaultDefendersCrestRadius;
 
-        [InputFloatElement("Defender's Crest", "Damage Tick Rate", 0.01f, 1f)]
-        public float defendersCrestDamageRate = defaultDefendersCrestDamageRate;
+        [InputFloatElement("Defender's Crest", "Cloud Damage", 0f, 20f)]
+        public float defendersCrestDamage = defaultDefendersCrestDamage;
 		
         [InputFloatElement("Defender's Crest", "Steady Body Cloud Radius", 0f, 5f)]
 		public float defendersCrestSteadyBodyRadius = defaultDefendersCrestSteadyBodyRadius;
@@ -888,8 +896,8 @@ namespace CharmReValance
         [InputFloatElement("Defender's Crest", "Steady Body Cloud Duration Increase", 0f, 5f)]
 		public float defendersCrestSteadyBodyDuration = defaultDefendersCrestSteadyBodyDuration;
 
-        [InputFloatElement("Defender's Crest", "FotF Damage Tick Rate", 0.01f, 1f)]
-		public float defendersCrestFotFDamageRate = defaultDefendersCrestFotFDamageRate;
+        [InputFloatElement("Defender's Crest", "FotF Cloud Damage", 0f, 20f)]
+		public float defendersCrestFotFDamage = defaultDefendersCrestFotFDamage;
 
         [ButtonElement("Defender's Crest", "Reset Defaults", "")]
         public void ResetDefendersCrest()
@@ -899,10 +907,10 @@ namespace CharmReValance
 			defendersCrestFrequency = defaultDefendersCrestFrequency;
 			defendersCrestDuration = defaultDefendersCrestDuration;
 			defendersCrestRadius = defaultDefendersCrestRadius;
-			defendersCrestDamageRate = defaultDefendersCrestDamageRate;
+			defendersCrestDamage = defaultDefendersCrestDamage;
 			defendersCrestSteadyBodyRadius = defaultDefendersCrestSteadyBodyRadius;
 			defendersCrestSteadyBodyDuration = defaultDefendersCrestSteadyBodyDuration;
-			defendersCrestFotFDamageRate = defaultDefendersCrestFotFDamageRate;
+			defendersCrestFotFDamage = defaultDefendersCrestFotFDamage;
         }
 
 //	Dream Wielder
@@ -918,9 +926,6 @@ namespace CharmReValance
         [InputIntElement("Dream Wielder", "Essence Chance High (1/X)", 1, 1000)]
         public int dreamWielderEssenceChanceHigh = defaultDreamWielderEssenceChanceHigh;
 
-        [InputFloatElement("Dream Wielder", "Spell Twister Dream Nail Range", 0, 5f)]
-		public float dreamWielderSpellTwisterRange = defaultDreamWielderSpellTwisterRange;
-
         [ButtonElement("Dream Wielder", "Reset Defaults", "")]
         public void ResetDreamWielder()
         {
@@ -928,14 +933,13 @@ namespace CharmReValance
 			dreamWielderSoulGain = defaultDreamWielderSoulGain;
 			dreamWielderEssenceChanceLow = defaultDreamWielderEssenceChanceLow;
 			dreamWielderEssenceChanceHigh = defaultDreamWielderEssenceChanceHigh;
-			dreamWielderSpellTwisterRange = defaultDreamWielderSpellTwisterRange;
         }
 
 //	Dreamshield
         [SliderIntElement("Dreamshield", "Notch Cost", 0, 5)]
         public int charm38NotchCost = defaultCharm38NotchCost;
 
-        [InputIntElement("Dreamshield", "Dream Nail Overheal", 0, 5)]
+        // [InputIntElement("Dreamshield", "Dream Nail Overheal", 0, 5)]
 		public int dreamshieldOverheal = defaultDreamshieldOverheal;
 
         [BoolElement("Dreamshield", "Blocks Attacks from Behind", "")]
@@ -962,10 +966,13 @@ namespace CharmReValance
         //[InputFloatElement("Dreamshield", "Tween Speed", 0f, 100f)]
 		public float dreamshieldTweenSpeed = defaultDreamshieldTweenSpeed;
 
-        [InputFloatElement("Dreamshield", "Defender's Crest Shield Reformation Time", 0f, 60f)]
-        public float dreamshieldDefendersCrestReformTime = defaultDreamshieldDefendersCrestReformTime;
+        [InputFloatElement("Dreamshield", "Defender's Crest Shield Reformation Time Reduction", 0f, 60f)]
+        public float dreamshieldDefendersCrestReformTimeReduction = defaultDreamshieldDefendersCrestReformTimeReduction;
 
-        [InputIntElement("Dreamshield", "Lifeblood Heart Overheal Max Increase", 0, 5)]
+        [InputFloatElement("Dreamshield", "Dream Wielder Shield Reformation Time Reduction", 0f, 60f)]
+        public float dreamshieldDreamWielderReformTimeReduction = defaultDreamshieldDreamWielderReformTimeReduction;
+
+        // [InputIntElement("Dreamshield", "Lifeblood Heart Overheal Max Increase", 0, 5)]
         public int dreamshieldLifebloodHeartOverhealMaxIncrease = defaultDreamshieldLifebloodHeartOverhealMaxIncrease;
 
         [ButtonElement("Dreamshield", "Reset Defaults", "")]
@@ -981,7 +988,8 @@ namespace CharmReValance
 			dreamshieldSizeScale = defaultDreamshieldSizeScale;
 			dreamshieldOverheadOffset = defaultDreamshieldOverheadOffset;
 			dreamshieldTweenSpeed = defaultDreamshieldTweenSpeed;
-            dreamshieldDefendersCrestReformTime = defaultDreamshieldDefendersCrestReformTime;
+            dreamshieldDefendersCrestReformTimeReduction = defaultDreamshieldDefendersCrestReformTimeReduction;
+			dreamshieldDreamWielderReformTimeReduction = defaultDreamshieldDreamWielderReformTimeReduction;
             dreamshieldLifebloodHeartOverhealMaxIncrease = defaultDreamshieldLifebloodHeartOverhealMaxIncrease;
         }
 
@@ -1022,35 +1030,41 @@ namespace CharmReValance
         //[InputFloatElement("Flukenest", "Shaman Stone Fluke Max Size", 0f, 3f)]
         public float flukeShamanStoneSizeMax = defaultFlukeShamanStoneSizeMax;
 
-        [InputIntElement("Flukenest", "Defender's Crest VS Damage", 0, 100)]
-        public int flukenestDefendersCrestVSDamage = defaultFlukenestDefendersCrestVSDamage;
+        [InputIntElement("Flukenest", "Volatile Fluke Lv1 Contact Damage", 0, 100)]
+        public int volatileFlukeLv1ContactDamage = defaultVolatileFlukeLv1ContactDamage;
 
-        [InputIntElement("Flukenest", "Defender's Crest SS Damage", 0, 100)]
-        public int flukenestDefendersCrestSSDamage = defaultFlukenestDefendersCrestSSDamage;
-		
-        [InputFloatElement("Flukenest", "Defender's Crest Cloud Damage Tick Rate", 0.01f, 1f)]
-        public float flukenestDefendersCrestDamageRate = defaultFlukenestDefendersCrestDamageRate;
-		
-        [InputFloatElement("Flukenest", "Defender's Crest Cloud Duration", 0f, 6f)]
-        public float flukenestDefendersCrestDuration = defaultFlukenestDefendersCrestDuration;
-		
-        [InputFloatElement("Flukenest", "Defender's Crest Cloud Radius", 0.01f, 10f)]
-        public float flukenestDefendersCrestRadius = defaultFlukenestDefendersCrestRadius;
+        [InputIntElement("Flukenest", "Volatile Fluke Lv2 Contact Damage", 0, 100)]
+        public int volatileFlukeLv2ContactDamage = defaultVolatileFlukeLv2ContactDamage;
 
-        [InputIntElement("Flukenest", "DC + Shaman Stone VS Damage", 0, 100)]
-        public int flukenestDCShamanStoneVSDamage = defaultFlukenestDCShamanStoneVSDamage;
+        [InputFloatElement("Flukenest", "Volatile Fluke Lv1 Cloud Damage", 0f, 100f)]
+        public float volatileFlukeLv1CloudDamage = defaultVolatileFlukeLv1CloudDamage;
 
-        [InputIntElement("Flukenest", "DC + Shaman Stone SS Damage", 0, 100)]
-        public int flukenestDCShamanStoneSSDamage = defaultFlukenestDCShamanStoneSSDamage;
+        [InputFloatElement("Flukenest", "Volatile Fluke Lv2 Cloud Damage", 0f, 100f)]
+        public float volatileFlukeLv2CloudDamage = defaultVolatileFlukeLv2CloudDamage;
+
+        [InputFloatElement("Flukenest", "Volatile Fluke Cloud Duration", 0f, 6f)]
+        public float volatileFlukeCloudDuration = defaultVolatileFlukeCloudDuration;
 		
-        [InputFloatElement("Flukenest", "DC + Shaman Stone Cloud Damage Tick Rate", 0.01f, 1f)]
-        public float flukenestDCShamanStoneDamageRate = defaultFlukenestDCShamanStoneDamageRate;
+        [InputFloatElement("Flukenest", "Volatile Fluke Cloud Radius", 0.01f, 10f)]
+        public float volatileFlukeCloudRadius = defaultVolatileFlukeCloudRadius;
+
+        [InputIntElement("Flukenest", "VF Shaman Stone Lv1 Damage", 0, 100)]
+        public int volatileFlukeShamanStoneLv1ContactDamage = defaultVolatileFlukeShamanStoneLv1ContactDamage;
+
+        [InputIntElement("Flukenest", "VF Shaman Stone Lv2 Damage", 0, 100)]
+        public int volatileFlukeShamanStoneLv2ContactDamage = defaultVolatileFlukeShamanStoneLv2ContactDamage;
+
+        [InputFloatElement("Flukenest", "VF Shaman Stone Lv 1 Cloud Damage", 0f, 100f)]
+        public float volatileFlukeShamanStoneLv1CloudDamage = defaultVolatileFlukeShamanStoneLv1CloudDamage;
+
+        [InputFloatElement("Flukenest", "VF Shaman Stone Lv 2 Cloud Damage", 0f, 100f)]
+        public float volatileFlukeShamanStoneLv2CloudDamage = defaultVolatileFlukeShamanStoneLv2CloudDamage;
+
+        [InputFloatElement("Flukenest", "VF Shaman Stone Cloud Duration", 0f, 6f)]
+        public float volatileFlukeShamanStoneCloudDuration = defaultVolatileFlukeShamanStoneCloudDuration;
 		
-        [InputFloatElement("Flukenest", "DC + Shaman Stone Cloud Duration", 0f, 6f)]
-        public float flukenestDCShamanStoneDuration = defaultFlukenestDCShamanStoneDuration;
-		
-        [InputFloatElement("Flukenest", "DC + Shaman Stone Cloud Radius", 0.01f, 10f)]
-        public float flukenestDCShamanStoneRadius = defaultFlukenestDCShamanStoneRadius;
+        [InputFloatElement("Flukenest", "VF Shaman Stone Cloud Radius", 0.01f, 10f)]
+        public float volatileFlukeShamanStoneCloudRadius = defaultVolatileFlukeShamanStoneCloudRadius;
 
         [ButtonElement("Flukenest", "Reset Defaults", "")]
         public void ResetFlukenest()
@@ -1067,16 +1081,18 @@ namespace CharmReValance
 			flukeShamanStoneDamage = defaultFlukeShamanStoneDamage;
 			flukeShamanStoneSizeMin = defaultFlukeShamanStoneSizeMin;
 			flukeShamanStoneSizeMax = defaultFlukeShamanStoneSizeMax;
-			flukenestDefendersCrestVSDamage = defaultFlukenestDefendersCrestVSDamage;
-			flukenestDefendersCrestSSDamage = defaultFlukenestDefendersCrestSSDamage;
-			flukenestDefendersCrestDamageRate = defaultFlukenestDefendersCrestDamageRate;
-			flukenestDefendersCrestDuration = defaultFlukenestDefendersCrestDuration;
-			flukenestDefendersCrestRadius = defaultFlukenestDefendersCrestRadius;
-			flukenestDCShamanStoneVSDamage = defaultFlukenestDCShamanStoneVSDamage;
-			flukenestDCShamanStoneSSDamage = defaultFlukenestDCShamanStoneSSDamage;
-			flukenestDCShamanStoneDamageRate = defaultFlukenestDCShamanStoneDamageRate;
-			flukenestDCShamanStoneDuration = defaultFlukenestDCShamanStoneDuration;
-			flukenestDCShamanStoneRadius = defaultFlukenestDCShamanStoneRadius;
+			volatileFlukeLv1ContactDamage = defaultVolatileFlukeLv1ContactDamage;
+			volatileFlukeLv2ContactDamage = defaultVolatileFlukeLv2ContactDamage;
+			volatileFlukeLv1CloudDamage = defaultVolatileFlukeLv1CloudDamage;
+            volatileFlukeLv2CloudDamage = defaultVolatileFlukeLv2CloudDamage;
+            volatileFlukeCloudDuration = defaultVolatileFlukeCloudDuration;
+			volatileFlukeCloudRadius = defaultVolatileFlukeCloudRadius;
+			volatileFlukeShamanStoneLv1ContactDamage = defaultVolatileFlukeShamanStoneLv1ContactDamage;
+			volatileFlukeShamanStoneLv2ContactDamage = defaultVolatileFlukeShamanStoneLv2ContactDamage;
+            volatileFlukeShamanStoneLv1CloudDamage = defaultVolatileFlukeShamanStoneLv1CloudDamage;
+            volatileFlukeShamanStoneLv2CloudDamage = defaultVolatileFlukeShamanStoneLv2CloudDamage;
+            volatileFlukeShamanStoneCloudDuration = defaultVolatileFlukeShamanStoneCloudDuration;
+			volatileFlukeShamanStoneCloudRadius = defaultVolatileFlukeShamanStoneCloudRadius;
         }
 
 //	Fragile Charms
@@ -1237,9 +1253,12 @@ namespace CharmReValance
         [InputFloatElement("Glowing Womb", "Defender's Crest Cloud Radius", 0f, 5f)]
         public float glowingWombDefendersCrestRadius = defaultGlowingWombDefendersCrestRadius;
 
-        [InputFloatElement("Glowing Womb", "Defender's Crest Damage Tick Rate", 0.01f, 1f)]
-        public float glowingWombDefendersCrestDamageRate = defaultGlowingWombDefendersCrestDamageRate;
+        [InputFloatElement("Glowing Womb", "Defender's Crest Cloud Damage", 0f, 50f)]
+        public float glowingWombDefendersCrestCloudDamage = defaultGlowingWombDefendersCrestCloudDamage;
 		
+        [InputFloatElement("Glowing Womb", "DC + FotF Cloud Duration", 0f, 10f)]
+        public float glowingWombDefendersCrestFotFDuration = defaultGlowingWombDefendersCrestFotFDuration;
+
         [ButtonElement("Glowing Womb", "Reset Defaults", "")]
         public void ResetGlowingWomb()
         {
@@ -1259,7 +1278,8 @@ namespace CharmReValance
 			glowingWombDefendersCrestDamage = defaultGlowingWombDefendersCrestDamage;
 			glowingWombDefendersCrestDuration = defaultGlowingWombDefendersCrestDuration;
 			glowingWombDefendersCrestRadius = defaultGlowingWombDefendersCrestRadius;
-			glowingWombDefendersCrestDamageRate = defaultGlowingWombDefendersCrestDamageRate;
+			glowingWombDefendersCrestCloudDamage = defaultGlowingWombDefendersCrestCloudDamage;
+			glowingWombDefendersCrestFotFDuration = defaultGlowingWombDefendersCrestFotFDuration;
         }
 
 //	Grimmchild
@@ -1296,6 +1316,12 @@ namespace CharmReValance
         [InputIntElement("Grimmchild", "Flukenest Damage Increase", 0, 50)]
 		public int grimmchildFlukenestDamageIncrease = defaultGrimmchildFlukenestDamageIncrease;
 
+        [InputIntElement("Grimmchild", "Dream Nail Base Damage", 0, 100)]
+        public int grimmchildDreamNailBaseDamage = defaultDreamNailBaseDamage;
+		
+        [InputIntElement("Grimmchild", "+1 Damage per X Essense", 0, 1000)]
+		public int grimmchildDreamNailDamageScaleRate = defaultDreamNailDamageScaleRate;
+
         public int charm40NotchCost = defaultCharmGrimmchildNotchCost;
 
         [ButtonElement("Grimmchild", "Reset Defaults", "")]
@@ -1312,6 +1338,8 @@ namespace CharmReValance
 			grimmchildDamage4 = defaultGrimmchildDamage4;
 			grimmchildGatheringSwarmAttackTimer = defaultGrimmchildGatheringSwarmAttackTimer;
 			grimmchildFlukenestDamageIncrease = defaultGrimmchildFlukenestDamageIncrease;
+			grimmchildDreamNailBaseDamage = defaultDreamNailBaseDamage;
+			grimmchildDreamNailDamageScaleRate = defaultDreamNailDamageScaleRate;
 
 			charm40NotchCost = PlayerDataAccess.grimmChildLevel == 5 ? charmCarefreeMelodyNotchCost : charmGrimmchildNotchCost;
         }
@@ -1810,12 +1838,16 @@ namespace CharmReValance
         [InputIntElement("Spell Twister", "Shape of Unn Spell Cost", 0, 99)]
 		public int spellTwisterShapeOfUnnSpellCost = defaultSpellTwisterShapeOfUnnSpellCost;
 
+        [InputFloatElement("Spell Twister", "Dream Nail Range", 0, 5f)]
+		public float spellTwisterDreamNailRange = defaultSpellTwisterDreamNailRange;
+
         [ButtonElement("Spell Twister", "Reset Defaults", "")]
         public void ResetSpellTwister()
         {
 			charm33NotchCost = defaultCharm33NotchCost;
 			spellTwisterSpellCost = defaultSpellTwisterSpellCost;
 			spellTwisterShapeOfUnnSpellCost = defaultSpellTwisterShapeOfUnnSpellCost;
+			spellTwisterDreamNailRange = defaultSpellTwisterDreamNailRange;
         }
 
 //	Spore Shroom
@@ -2066,6 +2098,9 @@ namespace CharmReValance
         [InputIntElement("Weaversong", "Flukenest Damage Increase", 0, 50)]
 		public int weaversongFlukenestDamageIncrease = defaultWeaversongFlukenestDamageIncrease;
 
+        [InputIntElement("Weaversong", "Flukenest Soul Reduction", 0, 231)]
+		public int weaversongFlukenestSoulReduction = defaultWeaversongFlukenestSoulReduction;
+
         [InputIntElement("Weaversong", "Grubsong Soul Gain", 0, 231)]
         public int weaversongGrubsongSoulGain = defaultWeaversongGrubsongSoulGain;
 
@@ -2090,6 +2125,7 @@ namespace CharmReValance
 			weaversongGatheringSwarmCount = defaultWeaversongGatheringSwarmCount;
 			weaversongGatheringSwarmDamageReduction = defaultWeaversongGatheringSwarmDamageReduction;
 			weaversongFlukenestDamageIncrease = defaultWeaversongFlukenestDamageIncrease;
+			weaversongFlukenestSoulReduction = defaultWeaversongFlukenestSoulReduction;
 			weaversongGrubsongSoulGain = defaultWeaversongGrubsongSoulGain;
 			weaversongCarefreeMelodyDamageIncrease = defaultWeaversongCarefreeMelodyDamageIncrease;
 			weaversongCarefreeMelodySoulGain = defaultWeaversongCarefreeMelodySoulGain;

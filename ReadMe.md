@@ -25,6 +25,7 @@ Below is an itemized list of the changes made to each ability and charm. And whe
 - **Desolate Dive** damage reduced to 10 for contact and 15 for shockwave (from 15 and 20, respectively)
 - **Descending Dark** damage reduced to 10 for contact and 25 for first shockwave (from 15 and 35/30, respectively)
 - The chance for an enemy to grant 1 essence when you've spent more essence than you've gained is increased to 1/20 (from 1/60)
+- The height of **Dream Nail**'s hit box increased by 35% 
 
 ## Charms
 
@@ -71,19 +72,16 @@ Below is an itemized list of the changes made to each ability and charm. And whe
 
 - Soul gain from dreamnail reduced to 33 (from 66)
 - Chance of essence gain from enemies increased to 1/100 and 1/5 (from 1/200 and 1/40, respectively)
-- Synergy w/ Spell Twister: Increases dream nail range by 25%
 
 ### Dreamshield
 
-- Notch cost reduced to 2 (from 3)
 - Entirely redesigned. The shield now follows directly behind the knight, protecting from attacks from behind. An up or down directional input causes the shield to move to just over the knight's head, allowing it to block projectiles from above.
 - The size of the shield is reduced to 75% of its vanilla size.
 - When behind the knight, the shield will block incoming attacks from behind, preventing damage but still causing the knight to recoil and gain invulnerability. Blocking a hit causes the shield to be disabled temporarily.
-- Striking an enemy with dream nail causes the knight to overheal, gaining 1 lifeblood. (Overheal limit 1)
-- The shield's contact damage has been decoupled from nail damage. Instead it deals 5 damage plus 1 additional damage for every 100 essence the knight has collected. In addition, the damaged enemy will be knocked away from the knight.
-- The shield's reformation time has been increased to 3.6s (from 2s)
-- Synergy w/ Defender's Crest: Shield reformation time reduced to 2.4s
-- Syerngy w/ Lifeblood Heart: Dreamshield overheal limit is increased to 2.
+- The shield's contact damage has been decoupled from nail damage. Instead it deals 8 damage plus 1 additional damage for every 100 essence the knight has collected. In addition, the damaged enemy will be knocked away from the knight.
+- The shield's reformation time has been increased to 6.4s (from 2s)
+- Synergy w/ Defender's Crest: Shield reformation time reduced by 1.2s
+- Synergy w/ Dream Wielder: Shield reformation time reduced by 1.6s
 
 ### Flukenest
 
@@ -94,9 +92,9 @@ Below is an itemized list of the changes made to each ability and charm. And whe
 
 #### Flukenest + Defender's Crest
 
-- Volative fluke contact damage increased to 15 for vengeful spirit and 25 for shade soul, or 20 and 30 with shaman stone (from 3, in all cases)
-- Volatile fluke cloud duration to 3.6s and damage tick rate increased to 0.24s, dealing ~30 damage (from 2.2s and 0.2s, respectively)
-- With shaman stone, the damage tick rate is reduced to 0.18s and the cloud radius is increased.
+- Volative fluke contact damage increased to 8 for vengeful spirit and 13 for shade soul, or 10 and 18 with shaman stone (from 3, in all cases)
+- Volatile fluke cloud duration to 3.6s (from 2.2s) and damage increased to 19 for vengeful spirit and 35 for shade soul (from ~22)
+- With shaman stone, the cloud damage is 26 for vengeful spirit and 46 for shade soul.
 
 ### Fragile Greed
 
@@ -114,9 +112,9 @@ Below is an itemized list of the changes made to each ability and charm. And whe
 
 ### Fury of the Fallen
 
-- Fury of the Fallen is active while **below 40% health** and/or **while overcharmed**. While fury is active:
+- Fury of the Fallen is active while **below 50% health** and/or **while overcharmed**. While fury is active:
 - Nail damage increased by 6 (instead of 75%)
-- Nail cooldown reduced by 0.08s
+- Nail cooldown reduced by 0.1s
 - Vengeful spirit and shade soul damage increased by 10
 - Howling wraiths and abyss shriek damage per hit increased by 5 and 4, respectively
 - Desolate dive and descending damage damage increased by 5 for contact and 5 for shockwave
@@ -130,10 +128,10 @@ Below is an itemized list of the changes made to each ability and charm. And whe
 ### Glowing Womb
 
 - Hatchlings now damage enemies through shields and armor.
-- Soul cost to summon a hatchling increased to 24 (from 8)
+- Soul cost to summon a hatchling increased to 20 (from 8)
 - Hatchlings summoned limit reduced to 2 (from 4)
 - Hatchling contact damage increased to 15 (from 9)
-- Synergy w/ Gathering Swarm: Spawn rate reduced to 3s (from 4s), soul cost reduced by 6, summon limit increased to 3
+- Synergy w/ Gathering Swarm: Spawn rate reduced to 2.8s (from 4s), soul cost reduced by 6, summon limit increased to 3
 - Synergy w/ Fury of the Fallen: While furious, contact damage increased by 8
 - Synergy w/ Flukenest: Contact damage increased by 5
 - Synergy w/ Carefree Melody: Soul cost reduced by 6
@@ -141,8 +139,9 @@ Below is an itemized list of the changes made to each ability and charm. And whe
 #### Glowing Womb + Defender's Crest
 
 - Contact damage reduced to 3 (from 4)
-- Cloud duration increased to 2.8s and damage tick rate reduced to 0.18s (from 1s and 0.2s, respectively)
+- Cloud duration increased to 2.8s and damage to 19 (from 1s and 5, respectively)
 - Cloud radius greatly increased
+- While furious, cloud duration reduced to 1.1s dealing the same amount of damage
 
 ### Grimmchild
 
@@ -151,6 +150,7 @@ Below is an itemized list of the changes made to each ability and charm. And whe
 - Grimmchild's detection radius is centered closer to the knight, allowing it to more easily target enemies in front of the knight.
 - Attack cooldown increased to 3.6s (from 1.8s)
 - Attack damage increased to 11 in phase 2, 18 in phase 3, and 25 in phase 4 (from 5, 8, and 11, respectively)
+- Dream nail deals 8 damage plus 1 additional damage for every 100 essence the knight has collected.
 - Synergy w/ Gathering Swarm: Attack cooldown reduced to 2.4s
 - Synergy w/ Flukenest: Attack damage increased by 7
 
@@ -178,7 +178,7 @@ Below is an itemized list of the changes made to each ability and charm. And whe
 - Additional boss stagger increased to 3 or 2 during combo (from 1 in both cases)
 - Nail strikes destroy geo rocks and destructible walls three times faster.
 - Knockback of great slash and dash slash doubled
-- Synergy w/ Steady Body: Nail cooldown reduced by 0.08s
+- Synergy w/ Steady Body: Nail cooldown reduced by 0.1s
 
 ### Hiveblood
 
@@ -268,6 +268,7 @@ Below is an itemized list of the changes made to each ability and charm. And whe
 
 ### Spell Twister
 
+- Increases dream nail range by 25%
 - Synergy w/ Shape of Unn: Spell cost further reduced to 22 (from 24 without)
 
 ### Spore Shroom
@@ -324,10 +325,36 @@ Below is an itemized list of the changes made to each ability and charm. And whe
 
 ### Weaversong
 
-- As vanilla, summons 3 weaverlings that deal 3 damage per hit.
-- Weaverlings steal 1 soul from each enemy they strike.
-- Synergy w/ Gathering Swarm: Increase number of weaverlings to 5 but reduce damage by 2
-- Synergy w/ Flukenest: Increase damage by 2
+- As vanilla, summons 3 weaverlings that deal 2 damage per hit.
+- Weaverlings steal 2 soul from each enemy they strike.
+- Synergy w/ Gathering Swarm: Increase number of weaverlings to 5 but reduce damage by 1
+- Synergy w/ Flukenest: Increase damage by 3 but reduces soul steal by 1
 - Synergy w/ Grubsong: Increase soul steal by 1 (down from 3 in vanilla)
 - Synergy w/ Carefree Melody: Increase damage and soul steal by 1 each
+
+
+# Version Change Log
+
+### 1.25.10.07
+
+- Local settings changed to global settings
+- Multiple damage ticker effects allowed per frame so overlapping damage tick effects don't interfere with each other
+- Increased dream nail hit box height by 40%
+- Move dream wielder + spell twister dream nail range increase synergy to just spell twister
+- Increased dreamshield notch cost back to 3
+- Removed dreamshield's overheal effective
+- Increased dreamshield reform time
+- Added synergy with dreamshield + dream wielder to reduce shield reform time
+- Fixed crystal hunter projectiles so they're blocked by dreamshield
+- Fixed flukenest + defender's crest volatile fluke cloud duration
+- Rebalanced volatile fluke to deal more damage with cloud than contact
+- Fury of the fallen now active under 50% hp instead of under 40%
+- Fury nail cooldown reduction increased to 0.1s from 0.08s
+- Glowing womb soul cost reduced to 20 from 24
+- Glowing womb + defender's crest + fury of the fallen cloud duration is reduced with increased damage rate
+- Grimmchild now causes dream nail to deal damage
+- Heavy blow + steady body nail cooldown reduction synergy increased to 0.1s (from 0.08s)
+- Added missing destructible objects to heavy blow's faster break times
+- Thorns of agony + flukenest now causes a spray of flukes when taking damage
+- Weaverlings deal less damage but steal more soul. Flukenest counters these changes, increasing damage and reducing soul gain
 

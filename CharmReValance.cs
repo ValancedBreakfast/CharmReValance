@@ -17,7 +17,7 @@ using UnityEngine;
 
 namespace CharmReValance
 {
-    public class CharmReValance : Mod, ICustomMenuMod, ILocalSettings<LocalSettings>
+    public class CharmReValance : Mod, ICustomMenuMod, IGlobalSettings<GlobalSettings>
     {
 ////////////////////////////////////////////////////////////////
 //	BOILERPLATE
@@ -34,9 +34,10 @@ namespace CharmReValance
                 return _instance;
             }
         }
-        public static LocalSettings LS { get; private set; } = new();
-        public void OnLoadLocal(LocalSettings s) => LS = s;
-        public LocalSettings OnSaveLocal() => LS;
+        public static GlobalSettings GS { get; private set; } = new();
+        public void OnLoadGlobal(GlobalSettings s) => GS = s;
+        public GlobalSettings OnSaveGlobal() => GS;
+
         public override string GetVersion() => GetType().Assembly.GetName().Version.ToString();
         public MenuScreen GetMenuScreen(MenuScreen modListMenu, ModToggleDelegates? _) => ModMenu.CreateMenuScreen(modListMenu);
         public bool ToggleButtonInsideMenu => false;
@@ -51,8 +52,8 @@ namespace CharmReValance
 //	CUSTOM VARIABLES
         #region Custom Variables
         private bool charmsReordered = false;
-        private float nailCooldown = LS.regularNailCooldown;
-        private float cdashChargeTime = LS.regularCDashChargeTime;
+        private float nailCooldown = GS.regularNailCooldown;
+        private float cdashChargeTime = GS.regularCDashChargeTime;
 
         private bool baldurShellBlocked = false;
         private int baldurGreedShellBlocks = 0;
@@ -66,16 +67,16 @@ namespace CharmReValance
         private GameObject _flukePrefab;
         private GameObject _flukeBlackPrefab;
         private bool furyActive = false;
-        private int grubSoulGain = LS.grubsongSoulGain;
+        private int grubSoulGain = GS.grubsongSoulGain;
         private bool hivebloodRegenMore = false;
         private int hivebloodRegenLimit = 1;
         private int hivebloodLocalMaxHP = PlayerDataAccess.maxHealth;
         private int hivebloodRegenTimes = 0;
         private int hivebloodRegensLeft = 0;
         private List<PlayMakerFSM> hivebloodJoniMasks = new List<PlayMakerFSM>();
-        private int lifebloodCoreCost = LS.lifebloodCoreCost;
+        private int lifebloodCoreCost = GS.lifebloodCoreCost;
         private float lifebloodCoreTimer = 0f;
-        private int lifebloodCoreMax = LS.lifebloodCoreLifeblood;
+        private int lifebloodCoreMax = GS.lifebloodCoreLifeblood;
         private bool shapeOfUnnVessel = PlayerDataAccess.equippedCharm_28;
         private bool stalwartShellRegen = false;
         private float stalwartShellTimer = 0f;
@@ -133,16 +134,15 @@ namespace CharmReValance
 
             orig(self, hitInstance);
         }
-        private void CrystalShotDebug(On.HutongGames.PlayMaker.Actions.FireAtTarget.orig_OnEnter orig, FireAtTarget self)
+        private void DreamshieldDebugLogging(On.HutongGames.PlayMaker.Actions.GetLayer.orig_OnEnter orig, GetLayer self)
         {
             orig(self);
 
-            if (self.Fsm.GameObject.name.StartsWith("Crystal Flyer"))
+            if (self.Fsm.GameObjectName == "Shield" && self.Fsm.Name == "Shield Hit" && self.State.Name.StartsWith("Type"))
             {
-                var shot = self.gameObject.GameObject.Value;
-                Log("Shot: " + shot.name);
-                Log("Tag: " + shot.tag);
-                Log("Layer: " + shot.layer);
+                Log("Collider: " + self.Fsm.Variables.GameObjectVariables.GetValue(0).ToString());
+                Log("Tag: " + self.Fsm.Variables.StringVariables.GetValue(0));
+                Log("Layer: " + self.Fsm.Variables.IntVariables.GetValue(0));
             }
         }
         #endregion
@@ -200,7 +200,7 @@ namespace CharmReValance
             #region Debug Hooks
             //ModHooks.AfterAttackHook += SlashToLog;
             //On.HealthManager.TakeDamage += DebugHitInstance;
-            On.HutongGames.PlayMaker.Actions.FireAtTarget.OnEnter += CrystalShotDebug;
+            //On.HutongGames.PlayMaker.Actions.GetLayer.OnEnter += DreamshieldDebugLogging;
             #endregion
 
 ////////////////////////////////////////////////////////////////
@@ -231,6 +231,9 @@ namespace CharmReValance
 //  Spells
 
 //  Dream Nail
+            On.HutongGames.PlayMaker.Actions.ActivateGameObject.OnEnter += DreamNailHitBoxSize;
+            On.HutongGames.PlayMaker.Actions.Tk2dPlayAnimation.OnEnter += DreamNailSpriteSize;
+            On.EnemyDreamnailReaction.RecieveDreamImpact += DreamNailDamage;
 
             #endregion
 
@@ -270,11 +273,9 @@ namespace CharmReValance
 //	Dream Wielder
             IL.EnemyDreamnailReaction.RecieveDreamImpact += DreamWielderSoul;
             IL.EnemyDeathEffects.EmitEssence += DreamWielderEssence;
-            On.HutongGames.PlayMaker.Actions.ActivateGameObject.OnEnter += DreamNailSize;
-            On.HutongGames.PlayMaker.Actions.Tk2dPlayAnimation.OnEnter += DreamNailSpriteSize;
 
 //	Dreamshield
-            On.EnemyDreamnailReaction.RecieveDreamImpact += DreamshieldOverheal;
+            //On.EnemyDreamnailReaction.RecieveDreamImpact += DreamshieldOverheal;
             On.HutongGames.PlayMaker.Actions.SendEventByName.OnEnter += DreamshieldDamageAndKnockback;
             On.HutongGames.PlayMaker.Actions.Wait.OnEnter += DreamshieldReformationTime;
 
@@ -285,21 +286,21 @@ namespace CharmReValance
             IL.HeroController.TakeDamage += DreamshieldBlockNoHitEffect;
             On.HutongGames.PlayMaker.Actions.SetScale.OnEnter += DreamshieldScaling;
 
-            On.HutongGames.PlayMaker.Actions.GetLayer.OnEnter += DreamshieldDebugLogging;
             On.PlayMakerFSM.OnEnable += DreamshieldFSMPrep;
+            On.HutongGames.PlayMaker.Actions.FireAtTarget.OnEnter += CrystalShotBlockable;
 
 //	Flukenest
             IL.SpellFluke.OnEnable += FlukeDamageSizeLifetime;
-            On.HutongGames.PlayMaker.Actions.FlingObjectsFromGlobalPool.OnEnter += FlukenestCount;
-            On.HealthManager.TakeDamage += FlukenestDCContactDamage;
-            On.HutongGames.PlayMaker.Actions.Wait.OnEnter += FlukenestDCCloud;
+            On.HutongGames.PlayMaker.Actions.FlingObjectsFromGlobalPool.OnEnter += FlukeCount;
+            On.HutongGames.PlayMaker.Actions.TakeDamage.OnEnter += VolatileFlukeContactDamage;
+            On.HutongGames.PlayMaker.FsmState.OnEnter += VolatileFlukeCloud;
+            On.HutongGames.PlayMaker.Actions.Wait.OnEnter += VolatileFlukeCloudStopMoving;
 
 //	Fragile Charms
             On.HutongGames.PlayMaker.Actions.PlayerDataBoolTest.OnEnter += FragileCharmsBreak;
             IL.HealthManager.Die += GreedGeoIncrease;
             On.HeroController.AddGeo += GeoGrantsSoul;
             ILHeroController.orig_CharmUpdate += SetFragileHeartMasks;
-            //ModHooks.GetPlayerIntHook += StrengthNailDamageIncrease;
             On.HutongGames.PlayMaker.Actions.FloatMultiply.OnEnter += IgnoreVanillaStrengthDamage;
 
 //	Fury of the Fallen
@@ -313,15 +314,16 @@ namespace CharmReValance
 
 //	Glowing Womb
             On.HutongGames.PlayMaker.Actions.IntCompare.OnEnter += HatchlingSpawnRequirements;
+            On.HutongGames.PlayMaker.Actions.Wait.OnEnter += HatchlingSpawnRate;
             On.KnightHatchling.OnEnable += HatchlingDamage;
-            On.HutongGames.PlayMaker.Actions.Wait.OnEnter += GlowingWombDungCloudDamage;
+            On.HutongGames.PlayMaker.FsmState.OnEnter += GlowingWombDungDamage;
             On.HutongGames.PlayMaker.Actions.SetScale.OnEnter += GlowingWombDungRadius;
             IL.KnightHatchling.OnEnable += HatchlingFotFSettings;
 
 //	Grimmchild
             On.HutongGames.PlayMaker.Actions.SetFloatValue.OnEnter += GrimmchildAttackTimer;
             On.HutongGames.PlayMaker.Actions.RandomFloat.OnEnter += GrimmchildAttackTimer2;
-            On.HutongGames.PlayMaker.Actions.SetIntValue.OnEnter += GrimmchildDamage;
+            On.HutongGames.PlayMaker.Actions.SendEventByName.OnEnter += GrimmballDamager;
             On.HutongGames.PlayMaker.Actions.FireAtTarget.OnEnter += GrimmchildProjectileSpeed;
             On.HutongGames.PlayMaker.Actions.CallMethodProper.OnEnter += GrimmchildDetectRadius;
             On.PlayMakerFSM.OnEnable += RemoveGrimmballTerrainCollision;
@@ -442,7 +444,7 @@ namespace CharmReValance
             On.HutongGames.PlayMaker.Actions.ActivateGameObject.OnEnter += ThornsOfAgonyFlukes;
 
 //	Weaversong
-            On.HutongGames.PlayMaker.Actions.IntOperator.OnEnter += WeaverlingAttack;
+            On.HutongGames.PlayMaker.Actions.SendEventByName.OnEnter += WeaverlingAttack2;
             On.HutongGames.PlayMaker.Actions.CallMethodProper.OnEnter += IgnoreVanillaWeaversongSoulGain;
             On.HutongGames.PlayMaker.Actions.RandomFloat.OnEnter += WeaversongSpeeds;
             On.HutongGames.PlayMaker.Actions.SetFloatValue.OnEnter += WeaversongSprintmasterSpeed;
@@ -466,9 +468,9 @@ namespace CharmReValance
         #region Movement Changes
         private void CrystalDashChargeTime(On.HeroController.orig_CharmUpdate orig, HeroController self)
         {
-            cdashChargeTime = LS.regularCDashChargeTime
-                * (PlayerDataAccess.equippedCharm_7 ? LS.quickFocusCDashTimeMult : 1f)
-                * (PlayerDataAccess.equippedCharm_34 ? LS.deepFocusCDashTimeMult : 1f);
+            cdashChargeTime = GS.regularCDashChargeTime
+                * (PlayerDataAccess.equippedCharm_7 ? GS.quickFocusCDashTimeMult : 1f)
+                * (PlayerDataAccess.equippedCharm_34 ? GS.deepFocusCDashTimeMult : 1f);
             self.gameObject.LocateMyFSM("Superdash").GetFsmFloatVariable("Charge Time").Value = cdashChargeTime;
             //Log("Crystal Dash charge time: " + cdashChargeTime);
 
@@ -487,8 +489,8 @@ namespace CharmReValance
         {
             if ((self.Fsm.GameObject.name == "SuperDash Damage" || self.Fsm.GameObject.name == "SD Burst") && self.Fsm.Name == "damages_enemy")
             {
-                int damage = (int)Math.Round((PlayerDataAccess.equippedCharm_31 ? LS.dashmasterCDashDamage : LS.regularCDashDamage)
-                    * (PlayerDataAccess.equippedCharm_34 ? LS.deepFocusCDashDamageMult : 1f), MidpointRounding.AwayFromZero);
+                int damage = (int)Math.Round((PlayerDataAccess.equippedCharm_31 ? GS.dashmasterCDashDamage : GS.regularCDashDamage)
+                    * (PlayerDataAccess.equippedCharm_34 ? GS.deepFocusCDashDamageMult : 1f), MidpointRounding.AwayFromZero);
                 self.DamageDealt = damage;
             }
 
@@ -515,11 +517,11 @@ namespace CharmReValance
             {
                 if (self.floatValue.Name == "Time Per MP Drain UnCH")
                 {
-                    self.floatValue.Value = LS.regularFocusTime / (float)(PlayerDataAccess.focusMP_amount);
+                    self.floatValue.Value = GS.regularFocusTime / (float)(PlayerDataAccess.focusMP_amount);
                 }
                 else if (self.floatValue.Name == "Time Per MP Drain CH")
                 {
-                    self.floatValue.Value = LS.quickFocusFocusTime / (float)(PlayerDataAccess.focusMP_amount);
+                    self.floatValue.Value = GS.quickFocusFocusTime / (float)(PlayerDataAccess.focusMP_amount);
                 }
             }
 
@@ -531,11 +533,11 @@ namespace CharmReValance
             {
                 if (self.State.ActiveActionIndex == 0)
                 {
-                    self.intValue.Value = LS.regularFocusHealing;
+                    self.intValue.Value = GS.regularFocusHealing;
                 }
                 else if (self.State.ActiveActionIndex == 2)
                 {
-                    self.intValue.Value = LS.deepFocusHealing;
+                    self.intValue.Value = GS.deepFocusHealing;
                 }
             }
 
@@ -556,27 +558,27 @@ namespace CharmReValance
         {
             if (name == "nailDamage")
             {
-                orig = LS.regularNailDamageBase + (LS.regularNailDamageUpgrade * PlayerDataAccess.nailSmithUpgrades)
-                    + (PlayerDataAccess.equippedCharm_25 ? LS.strengthNailDamageIncrease : 0) 
-                    + (PlayerDataAccess.equippedCharm_15 ? LS.heavyBlowNailDamageIncrease : 0)
-                    + (PlayerDataAccess.equippedCharm_13 ? LS.markOfPrideNailDamageIncrease : 0)
-                    + (furyActive ? LS.furyOfTheFallenNailDamageIncrease : 0);
+                orig = GS.regularNailDamageBase + (GS.regularNailDamageUpgrade * PlayerDataAccess.nailSmithUpgrades)
+                    + (PlayerDataAccess.equippedCharm_25 ? GS.strengthNailDamageIncrease : 0) 
+                    + (PlayerDataAccess.equippedCharm_15 ? GS.heavyBlowNailDamageIncrease : 0)
+                    + (PlayerDataAccess.equippedCharm_13 ? GS.markOfPrideNailDamageIncrease : 0)
+                    + (furyActive ? GS.furyOfTheFallenNailDamageIncrease : 0);
             }
 
             return orig;
         }
         private void CalculateNailCooldown(On.HeroController.orig_DoAttack orig, HeroController self)
         {
-            nailCooldown = PlayerDataAccess.equippedCharm_15 ? LS.heavyBlowNailCooldownIncrease : LS.regularNailCooldown;
+            nailCooldown = PlayerDataAccess.equippedCharm_15 ? GS.heavyBlowNailCooldownIncrease : GS.regularNailCooldown;
             List<float> cooldownReductions = new List<float>();
             if (PlayerDataAccess.equippedCharm_15 && PlayerDataAccess.equippedCharm_14)
-                cooldownReductions.Add(LS.heavyBlowSteadyBodyNailCooldownReduction);
+                cooldownReductions.Add(GS.heavyBlowSteadyBodyNailCooldownReduction);
             if (PlayerDataAccess.equippedCharm_32)
-                cooldownReductions.Add(LS.quickSlashNailCooldownReduction);
+                cooldownReductions.Add(GS.quickSlashNailCooldownReduction);
             if (PlayerDataAccess.equippedCharm_13)
-                cooldownReductions.Add(LS.markOfPrideNailCooldownReduction);
+                cooldownReductions.Add(GS.markOfPrideNailCooldownReduction);
             if (furyActive)
-                cooldownReductions.Add(LS.furyOfTheFallenNailCooldownReduction);
+                cooldownReductions.Add(GS.furyOfTheFallenNailCooldownReduction);
             for (int i = 0; i < cooldownReductions.Count; i++)
             {
                 nailCooldown -= (cooldownReductions[i] / (float)(i + 1));
@@ -614,25 +616,25 @@ namespace CharmReValance
                 //  Set scream knockback
                 if (self.Fsm.GameObject.transform.parent.name.StartsWith("Scr Heads"))
                 {
-                    self.MagnitudeMultiplier = LS.regularHWKnockback;
+                    self.MagnitudeMultiplier = GS.regularHWKnockback;
                 }
                 //  Set cyclone slash knockback
                 else if (self.Fsm.GameObject.transform.parent.parent.name.StartsWith("Cyclone "))
                 {
-                    self.MagnitudeMultiplier = LS.regularCycloneSlashKnockback;
+                    self.MagnitudeMultiplier = GS.regularCycloneSlashKnockback;
                     //Log("Cyclone Slash knockback modified.");
                 }
             }
             else if (self.Fsm.GameObject.name.StartsWith("Great ") && self.Fsm.Name == "damages_enemy")
             {
                 //  Set great slash knockback
-                self.MagnitudeMultiplier = (PlayerDataAccess.equippedCharm_15 ? LS.heavyBlowGreatSlashKnockback : LS.regularGreatSlashKnockback);
+                self.MagnitudeMultiplier = (PlayerDataAccess.equippedCharm_15 ? GS.heavyBlowGreatSlashKnockback : GS.regularGreatSlashKnockback);
                 //Log("Great Slash knockback modified.");
             }
             else if (self.Fsm.GameObject.name.StartsWith("Dash ") && self.Fsm.Name == "damages_enemy")
             {
                 //  Set dash slash knockback
-                self.MagnitudeMultiplier = (PlayerDataAccess.equippedCharm_15 ? LS.heavyBlowDashSlashKnockback : LS.regularDashSlashKnockback);
+                self.MagnitudeMultiplier = (PlayerDataAccess.equippedCharm_15 ? GS.heavyBlowDashSlashKnockback : GS.regularDashSlashKnockback);
                 //Log("Dash Slash knockback modified.");
             }
 
@@ -646,20 +648,20 @@ namespace CharmReValance
         {
             if (self.Fsm.Name == "damages_enemy")// && self.AttackType.Value == 0)
             {
-                int nailDamage = PlayerDataAccess.nailDamage + (PlayerDataAccess.equippedCharm_15 ? LS.heavyBlowNailArtDamageIncrease : 0);
-                float dmgMult = PlayerDataAccess.equippedCharm_26 ? LS.nailmastersGloryDamageIncrease : 1f;
+                int nailDamage = PlayerDataAccess.nailDamage + (PlayerDataAccess.equippedCharm_15 ? GS.heavyBlowNailArtDamageIncrease : 0);
+                float dmgMult = PlayerDataAccess.equippedCharm_26 ? GS.nailmastersGloryDamageIncrease : 1f;
                 if (self.Fsm.GameObject.name == "Great Slash")
                 {
-                    self.DamageDealt = (int)Math.Round(nailDamage * LS.regularGreatSlashDamage * dmgMult, MidpointRounding.AwayFromZero);
-                    if (LS.nailmastersGloryMoPPiercing && PlayerDataAccess.equippedCharm_26 && PlayerDataAccess.equippedCharm_13)
+                    self.DamageDealt = (int)Math.Round(nailDamage * GS.regularGreatSlashDamage * dmgMult, MidpointRounding.AwayFromZero);
+                    if (GS.nailmastersGloryMoPPiercing && PlayerDataAccess.equippedCharm_26 && PlayerDataAccess.equippedCharm_13)
                         self.AttackType = 2;
                     else
                         self.AttackType = 0;
                 }
                 else if (self.Fsm.GameObject.name == "Dash Slash")
                 {
-                    self.DamageDealt = (int)Math.Round(nailDamage * LS.regularDashSlashDamage * dmgMult, MidpointRounding.AwayFromZero);
-                    if (LS.nailmastersGloryMoPPiercing && PlayerDataAccess.equippedCharm_26 && PlayerDataAccess.equippedCharm_13)
+                    self.DamageDealt = (int)Math.Round(nailDamage * GS.regularDashSlashDamage * dmgMult, MidpointRounding.AwayFromZero);
+                    if (GS.nailmastersGloryMoPPiercing && PlayerDataAccess.equippedCharm_26 && PlayerDataAccess.equippedCharm_13)
                         self.AttackType = 2;
                     else
                         self.AttackType = 0;
@@ -671,8 +673,8 @@ namespace CharmReValance
                     {
                         if (grandparent.name == "Cyclone Slash")
                         {
-                            self.DamageDealt = (int)Math.Round(nailDamage * LS.regularCycloneSlashDamage * dmgMult, MidpointRounding.AwayFromZero);
-                            if (LS.nailmastersGloryMoPPiercing && PlayerDataAccess.equippedCharm_26 && PlayerDataAccess.equippedCharm_13)
+                            self.DamageDealt = (int)Math.Round(nailDamage * GS.regularCycloneSlashDamage * dmgMult, MidpointRounding.AwayFromZero);
+                            if (GS.nailmastersGloryMoPPiercing && PlayerDataAccess.equippedCharm_26 && PlayerDataAccess.equippedCharm_13)
                                 self.AttackType = 2;
                             else
                                 self.AttackType = 0;
@@ -691,6 +693,51 @@ namespace CharmReValance
 
 //  Dream Nail Changes
         #region Dream Nail Changes
+        private void DreamNailHitBoxSize(On.HutongGames.PlayMaker.Actions.ActivateGameObject.orig_OnEnter orig, ActivateGameObject self)
+        {
+            if (self.Fsm.GameObject.name == "Knight" && self.Fsm.Name == "Dream Nail" && self.State.Name == "Slash")
+            {
+                float dnScale = PlayerDataAccess.equippedCharm_33 ? GS.spellTwisterDreamNailRange : GS.regularDreamNailRange;
+                self.gameObject.GameObject.Value.SetScale(dnScale, dnScale * GS.regularDreamNailHeight);
+            }
+
+            orig(self);
+        }
+        private void DreamNailSpriteSize(On.HutongGames.PlayMaker.Actions.Tk2dPlayAnimation.orig_OnEnter orig, Tk2dPlayAnimation self)
+        {
+            if (self.Fsm.GameObject.name == "Knight" && self.Fsm.Name == "Dream Nail" && self.State.Name == "Slash")
+            {
+                float dnScale = PlayerDataAccess.equippedCharm_33 ? GS.spellTwisterDreamNailRange : GS.regularDreamNailRange;
+                self.gameObject.GameObject.Value.SetScale(dnScale, dnScale);
+            }
+
+            orig(self);
+        }
+        private void DreamNailDamage(On.EnemyDreamnailReaction.orig_RecieveDreamImpact orig, EnemyDreamnailReaction self)
+        {
+            orig(self);
+
+            //  If Grimmchild is equipped
+            if (PlayerDataAccess.equippedCharm_40 && !(PlayerDataAccess.grimmChildLevel == 5))
+            {
+                //  Apply damage via HitTaker instead
+                HitTaker.Hit(self.gameObject, new HitInstance
+                {
+                    Source = HeroController.instance.gameObject,
+                    AttackType = AttackTypes.Spell,
+                    CircleDirection = true,
+                    DamageDealt = GS.grimmchildDreamNailBaseDamage + (int)(PlayerDataAccess.dreamOrbs / GS.grimmchildDreamNailDamageScaleRate),
+                    Direction = 0f,
+                    IgnoreInvulnerable = false,
+                    MagnitudeMultiplier = 0f,
+                    MoveAngle = 0f,
+                    MoveDirection = true,
+                    Multiplier = 1f,
+                    SpecialType = SpecialTypes.None,
+                    IsExtraDamage = false
+                }, 3);
+            }
+        }
         #endregion
 
         #endregion
@@ -704,21 +751,22 @@ namespace CharmReValance
         private void SetInvCharmOrder(On.HutongGames.PlayMaker.Actions.DestroyAllChildren.orig_OnEnter orig, DestroyAllChildren self)
         {
             if (self.Fsm.GameObject.name == "Charms" && self.Fsm.Name == "UI Charms" && self.State.Name == "Build Equipped"
-                && charmsReordered != LS.playersetReorderCharms)
+                && charmsReordered != GS.playersetReorderCharms)
             {
                 ChangeInventoryCharmOrder();
+                PlayerDataAccess.canOvercharm = true;
             }
 
             orig(self);
         }
         private void ChangeInventoryCharmOrder()
         {
-            if (charmsReordered != LS.playersetReorderCharms)
+            if (charmsReordered != GS.playersetReorderCharms)
             {
-                var charmOrder = LocalSettings.oldInventoryCharmOrder;
-                if (LS.playersetReorderCharms)
+                var charmOrder = GlobalSettings.oldInventoryCharmOrder;
+                if (GS.playersetReorderCharms)
                 {
-                    charmOrder = LocalSettings.newInventoryCharmOrder;
+                    charmOrder = GlobalSettings.newInventoryCharmOrder;
                 }
                 var charmsInv = GameCameras.instance.hudCamera.gameObject.transform.Find("Inventory/Charms");
                 if (charmsInv != null)
@@ -744,7 +792,7 @@ namespace CharmReValance
                         charm.localPosition = new Vector3(x, y, -0.001f);
                         //Log("charm at row " + row + ", col " + col + " new pos: " + x + ", " + y);
                     }
-                    charmsReordered = LS.playersetReorderCharms;
+                    charmsReordered = GS.playersetReorderCharms;
                     Log("Charms Inventory Reordered");
                 }
                 else Log("Couldn't find Inventory/Charms");
@@ -756,48 +804,48 @@ namespace CharmReValance
         #region Notch Cost Changes
         private void ChangeNotchCosts(On.GameManager.orig_CalculateNotchesUsed orig, GameManager self)
         {
-            LS.FixCharmNotches();
+            GS.FixCharmNotches();
 
-            PlayerDataAccess.charmCost_1 = LS.charm1NotchCost;
-            PlayerDataAccess.charmCost_2 = LS.charm2NotchCost;
-            PlayerDataAccess.charmCost_3 = LS.charm3NotchCost;
-            PlayerDataAccess.charmCost_4 = LS.charm4NotchCost;
-            PlayerDataAccess.charmCost_5 = LS.charm5NotchCost;
-            PlayerDataAccess.charmCost_6 = LS.charm6NotchCost;
-            PlayerDataAccess.charmCost_7 = LS.charm7NotchCost;
-            PlayerDataAccess.charmCost_8 = LS.charm8NotchCost;
-            PlayerDataAccess.charmCost_9 = LS.charm9NotchCost;
-            PlayerDataAccess.charmCost_10 = LS.charm10NotchCost;
-            PlayerDataAccess.charmCost_11 = LS.charm11NotchCost;
-            PlayerDataAccess.charmCost_12 = LS.charm12NotchCost;
-            PlayerDataAccess.charmCost_13 = LS.charm13NotchCost;
-            PlayerDataAccess.charmCost_14 = LS.charm14NotchCost;
-            PlayerDataAccess.charmCost_15 = LS.charm15NotchCost;
-            PlayerDataAccess.charmCost_16 = LS.charm16NotchCost;
-            PlayerDataAccess.charmCost_17 = LS.charm17NotchCost;
-            PlayerDataAccess.charmCost_18 = LS.charm18NotchCost;
-            PlayerDataAccess.charmCost_19 = LS.charm19NotchCost;
-            PlayerDataAccess.charmCost_20 = LS.charm20NotchCost;
-            PlayerDataAccess.charmCost_21 = LS.charm21NotchCost;
-            PlayerDataAccess.charmCost_22 = LS.charm22NotchCost;
-            PlayerDataAccess.charmCost_23 = LS.charm23NotchCost;
-            PlayerDataAccess.charmCost_24 = LS.charm24NotchCost;
-            PlayerDataAccess.charmCost_25 = LS.charm25NotchCost;
-            PlayerDataAccess.charmCost_26 = LS.charm26NotchCost;
-            PlayerDataAccess.charmCost_27 = LS.charm27NotchCost;
-            PlayerDataAccess.charmCost_28 = LS.charm28NotchCost;
-            PlayerDataAccess.charmCost_29 = LS.charm29NotchCost;
-            PlayerDataAccess.charmCost_30 = LS.charm30NotchCost;
-            PlayerDataAccess.charmCost_31 = LS.charm31NotchCost;
-            PlayerDataAccess.charmCost_32 = LS.charm32NotchCost;
-            PlayerDataAccess.charmCost_33 = LS.charm33NotchCost;
-            PlayerDataAccess.charmCost_34 = LS.charm34NotchCost;
-            PlayerDataAccess.charmCost_35 = LS.charm35NotchCost;
-            PlayerDataAccess.charmCost_36 = LS.charm36NotchCost;
-            PlayerDataAccess.charmCost_37 = LS.charm37NotchCost;
-            PlayerDataAccess.charmCost_38 = LS.charm38NotchCost;
-            PlayerDataAccess.charmCost_39 = LS.charm39NotchCost;
-            PlayerDataAccess.charmCost_40 = LS.charm40NotchCost;
+            PlayerDataAccess.charmCost_1 = GS.charm1NotchCost;
+            PlayerDataAccess.charmCost_2 = GS.charm2NotchCost;
+            PlayerDataAccess.charmCost_3 = GS.charm3NotchCost;
+            PlayerDataAccess.charmCost_4 = GS.charm4NotchCost;
+            PlayerDataAccess.charmCost_5 = GS.charm5NotchCost;
+            PlayerDataAccess.charmCost_6 = GS.charm6NotchCost;
+            PlayerDataAccess.charmCost_7 = GS.charm7NotchCost;
+            PlayerDataAccess.charmCost_8 = GS.charm8NotchCost;
+            PlayerDataAccess.charmCost_9 = GS.charm9NotchCost;
+            PlayerDataAccess.charmCost_10 = GS.charm10NotchCost;
+            PlayerDataAccess.charmCost_11 = GS.charm11NotchCost;
+            PlayerDataAccess.charmCost_12 = GS.charm12NotchCost;
+            PlayerDataAccess.charmCost_13 = GS.charm13NotchCost;
+            PlayerDataAccess.charmCost_14 = GS.charm14NotchCost;
+            PlayerDataAccess.charmCost_15 = GS.charm15NotchCost;
+            PlayerDataAccess.charmCost_16 = GS.charm16NotchCost;
+            PlayerDataAccess.charmCost_17 = GS.charm17NotchCost;
+            PlayerDataAccess.charmCost_18 = GS.charm18NotchCost;
+            PlayerDataAccess.charmCost_19 = GS.charm19NotchCost;
+            PlayerDataAccess.charmCost_20 = GS.charm20NotchCost;
+            PlayerDataAccess.charmCost_21 = GS.charm21NotchCost;
+            PlayerDataAccess.charmCost_22 = GS.charm22NotchCost;
+            PlayerDataAccess.charmCost_23 = GS.charm23NotchCost;
+            PlayerDataAccess.charmCost_24 = GS.charm24NotchCost;
+            PlayerDataAccess.charmCost_25 = GS.charm25NotchCost;
+            PlayerDataAccess.charmCost_26 = GS.charm26NotchCost;
+            PlayerDataAccess.charmCost_27 = GS.charm27NotchCost;
+            PlayerDataAccess.charmCost_28 = GS.charm28NotchCost;
+            PlayerDataAccess.charmCost_29 = GS.charm29NotchCost;
+            PlayerDataAccess.charmCost_30 = GS.charm30NotchCost;
+            PlayerDataAccess.charmCost_31 = GS.charm31NotchCost;
+            PlayerDataAccess.charmCost_32 = GS.charm32NotchCost;
+            PlayerDataAccess.charmCost_33 = GS.charm33NotchCost;
+            PlayerDataAccess.charmCost_34 = GS.charm34NotchCost;
+            PlayerDataAccess.charmCost_35 = GS.charm35NotchCost;
+            PlayerDataAccess.charmCost_36 = GS.charm36NotchCost;
+            PlayerDataAccess.charmCost_37 = GS.charm37NotchCost;
+            PlayerDataAccess.charmCost_38 = GS.charm38NotchCost;
+            PlayerDataAccess.charmCost_39 = GS.charm39NotchCost;
+            PlayerDataAccess.charmCost_40 = GS.charm40NotchCost;
         }
         #endregion
 
@@ -805,10 +853,10 @@ namespace CharmReValance
         #region Charm Descriptions
         private string ChangeCharmDescriptions(string key, string sheetTitle, string orig)
         {
-            if (sheetTitle == "UI" && LocalSettings.charmDesc.ContainsKey(key))
+            if (sheetTitle == "UI" && GlobalSettings.charmDesc.ContainsKey(key))
             {
                 //Log("Language value modified");
-                return LocalSettings.charmDesc[key];
+                return GlobalSettings.charmDesc[key];
             }
 
             return orig;
@@ -824,8 +872,8 @@ namespace CharmReValance
                 && PlayerDataAccess.equippedCharm_5 && PlayerDataAccess.blockerHits > 0)
             {
                 int hp = PlayerDataAccess.health + PlayerDataAccess.healthBlue;
-                int maxHP = PlayerDataAccess.maxHealth + LS.regularMaximumOverheal
-                    + (PlayerDataAccess.equippedCharm_8 ? LS.baldurShellLifebloodHeartOverhealMaxIncrease : 0);
+                int maxHP = PlayerDataAccess.maxHealth + GS.regularMaximumOverheal
+                    + (PlayerDataAccess.equippedCharm_8 ? GS.baldurShellLifebloodHeartOverhealMaxIncrease : 0);
                 //Log("HP: " + hp + " / " + maxHP);
                 //Log("Baldur Shell allowed continued focusing.");
 
@@ -844,7 +892,7 @@ namespace CharmReValance
             if (PlayerDataAccess.equippedCharm_5)
             {
                 baldurGreedShellBlocks = 0;
-                self.blockerHits = (PlayerDataAccess.equippedCharm_10 ? LS.baldurShellDefendersCrestBlocks : LS.baldurShellBlocks);
+                self.blockerHits = (PlayerDataAccess.equippedCharm_10 ? GS.baldurShellDefendersCrestBlocks : GS.baldurShellBlocks);
                 var BaldurShellFSM = HeroController.instance.gameObject.transform.Find("Charm Effects/Blocker Shield").gameObject.LocateMyFSM("Control");
                 if (!BaldurShellFSM.GetFsmState("Blocker Hit").HasFinishedTransition())
                 {
@@ -856,15 +904,15 @@ namespace CharmReValance
         {
             if (self.Fsm.GameObject.name.StartsWith("Hit ") && self.Fsm.Name == "push_enemy" && self.State.Name == "Send Event")
             {
-                self.attackMagnitude = 2f * LS.baldurShellKnockback;
+                self.attackMagnitude = 2f * GS.baldurShellKnockback;
             }
             orig(self);
         }
         private void BaldurShellOverheal(On.HeroController.orig_AddHealth orig, HeroController self, int amount)
         {
-            int healAmount = (LS.baldurShellDeepFocusAffected && PlayerDataAccess.equippedCharm_34 ? LS.deepFocusHealing : LS.regularFocusHealing);
-            int overhealMax = LS.regularMaximumOverheal
-                + (PlayerDataAccess.equippedCharm_8 ? LS.baldurShellLifebloodHeartOverhealMaxIncrease : 0);
+            int healAmount = (GS.baldurShellDeepFocusAffected && PlayerDataAccess.equippedCharm_34 ? GS.deepFocusHealing : GS.regularFocusHealing);
+            int overhealMax = GS.regularMaximumOverheal
+                + (PlayerDataAccess.equippedCharm_8 ? GS.baldurShellLifebloodHeartOverhealMaxIncrease : 0);
             int addBlueMasks = healAmount + PlayerDataAccess.health - PlayerDataAccess.maxHealth;
 
             orig(self, amount);
@@ -885,7 +933,7 @@ namespace CharmReValance
         private void BaldurShellGreedShell(On.HutongGames.PlayMaker.Actions.PlayerDataIntAdd.orig_OnEnter orig, PlayerDataIntAdd self)
         {
             if (self.Fsm.GameObject.name == "Blocker Shield" && self.Fsm.Name == "Control" && self.State.Name == "Blocker Hit"
-                && LS.baldurShellGreedShell && PlayerDataAccess.equippedCharm_24)
+                && GS.baldurShellGreedShell && PlayerDataAccess.equippedCharm_24)
             {
                 baldurGreedShellBlocks++;
                 //Log("Greed Shell blocks: " + baldurGreedShellBlocks);
@@ -896,9 +944,9 @@ namespace CharmReValance
                     geoLoss += i;
                     //Log("geoLoss increased to " + geoLoss);
                 }
-                geoLoss *= LS.baldurShellGreedGeoLossRate;
+                geoLoss *= GS.baldurShellGreedGeoLossRate;
                 if (PlayerDataAccess.equippedCharm_10)
-                    geoLoss = Mathf.CeilToInt((float)geoLoss * LS.baldurShellGreedDCGeoLossRate);
+                    geoLoss = Mathf.CeilToInt((float)geoLoss * GS.baldurShellGreedDCGeoLossRate);
                 //Log("Greed Shell geo loss: " + geoLoss);
 
                 if (PlayerDataAccess.geo >= geoLoss && geoLoss > 0)
@@ -906,7 +954,7 @@ namespace CharmReValance
                     HeroControllerR.TakeGeo(geoLoss);
                     //Log("Greed Shell blocked hit.");
 
-                    int geoDrop = Math.Min(LS.baldurShellGreedGeoDrop, geoLoss);
+                    int geoDrop = Math.Min(GS.baldurShellGreedGeoDrop, geoLoss);
                     ScatterGeoFromHero(geoDrop);
 
                     //Log("Blocker hits: " + PlayerDataAccess.blockerHits);
@@ -985,10 +1033,10 @@ namespace CharmReValance
         {
             //  Calculate chance to block
             int currentHP = PlayerDataAccess.health
-                + (PlayerDataAccess.equippedCharm_27 ? PlayerDataAccess.healthBlue - LS.jonisBlessingLifeblood : 0);
+                + (PlayerDataAccess.equippedCharm_27 ? PlayerDataAccess.healthBlue - GS.jonisBlessingLifeblood : 0);
             if (HeroControllerR.CanTakeDamage() && PlayerDataAccess.equippedCharm_40 && PlayerDataAccess.grimmChildLevel == 5)
             {
-                carefreeMelodyChance = Mathf.Max(Mathf.Pow(9 - currentHP, 3) * LS.carefreeMelodyChance / 512f, 0f);
+                carefreeMelodyChance = Mathf.Max(Mathf.Pow(9 - currentHP, 3) * GS.carefreeMelodyChance / 512f, 0f);
                 HeroControllerR.hitsSinceShielded = 1;
                 //Log("Carefree Melody chance to block: " + carefreeMelodyChance);
             }
@@ -1068,22 +1116,22 @@ namespace CharmReValance
             cursor.TryGotoNext(i => i.MatchLdstr("equippedCharm_31"));
             cursor.GotoNext();
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<bool, bool>>(downDash =>  downDash && LS.dashmasterDownwardDash);
+            cursor.EmitDelegate<Func<bool, bool>>(downDash =>  downDash && GS.dashmasterDownwardDash);
 
             // Dashmaster Dash Cooldown
             cursor.TryGotoNext(i => i.MatchLdfld<HeroController>("DASH_COOLDOWN_CH"));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(cooldown => LS.dashmasterDashCooldown);
+            cursor.EmitDelegate<Func<float, float>>(cooldown => GS.dashmasterDashCooldown);
 
             // Regular Dash Cooldown
             cursor.TryGotoNext(i => i.MatchLdfld<HeroController>("DASH_COOLDOWN"));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(cooldown => LS.regularDashCooldown);
+            cursor.EmitDelegate<Func<float, float>>(cooldown => GS.regularDashCooldown);
 
             // Shade Cloak Cooldown
             cursor.TryGotoNext(i => i.MatchLdfld<HeroController>("SHADOW_DASH_COOLDOWN"));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(cooldown => (PlayerDataAccess.equippedCharm_31 ? LS.dashmasterShadeCloakCooldown : LS.regularShadeCloakCooldown));
+            cursor.EmitDelegate<Func<float, float>>(cooldown => (PlayerDataAccess.equippedCharm_31 ? GS.dashmasterShadeCloakCooldown : GS.regularShadeCloakCooldown));
         }
         #endregion
 
@@ -1093,7 +1141,7 @@ namespace CharmReValance
         {
             if (self.Fsm.GameObject.name == "Knight" && self.Fsm.Name == "Spell Control" && self.State.Name == "Deep Focus Speed")
             {
-                self.multiplyBy.Value = LS.deepFocusHealingTimeMult;
+                self.multiplyBy.Value = GS.deepFocusHealingTimeMult;
             }
 
             orig(self);
@@ -1107,20 +1155,20 @@ namespace CharmReValance
             ILCursor cursor = new ILCursor(il).Goto(0);
             cursor.TryGotoNext(i => i.MatchLdcR4(0.8f));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(Discount => 100f - ((float)(LS.defendersCrestDiscount / 100f)));
+            cursor.EmitDelegate<Func<float, float>>(Discount => 100f - ((float)(GS.defendersCrestDiscount / 100f)));
         }
         private void DungCloudSettings(On.HutongGames.PlayMaker.Actions.Wait.orig_OnEnter orig, Wait self)
         {
             if (self.Fsm.GameObject.name == "Knight Dung Trail(Clone)" && self.Fsm.Name == "Control" && self.State.Name == "Wait")
             {
                 // Duration & Visuals
-                float dungDuration = (PlayerDataAccess.equippedCharm_14 ? LS.defendersCrestSteadyBodyDuration : LS.defendersCrestDuration);
+                float dungDuration = (PlayerDataAccess.equippedCharm_14 ? GS.defendersCrestSteadyBodyDuration : GS.defendersCrestDuration);
                 self.time.Value = dungDuration;
                 self.Fsm.GameObject.transform.Find("Pt Normal").GetComponent<ParticleSystem>().startLifetime = dungDuration * 1.25f;    //  visual doesn't last as long as hit box
 
                 // Damage Rate
-                float dungDamageRate = (furyActive ? LS.defendersCrestFotFDamageRate : LS.defendersCrestDamageRate);
-                self.Fsm.GameObject.GetComponent<DamageEffectTicker>().damageInterval = dungDamageRate;
+                float dungDamage = (furyActive ? GS.defendersCrestFotFDamage : GS.defendersCrestDamage);
+                self.Fsm.GameObject.GetComponent<DamageEffectTicker>().damageInterval = GetTickRate(dungDamage, GS.defendersCrestDuration);
             }
 
             orig(self);
@@ -1131,7 +1179,7 @@ namespace CharmReValance
 
             if (self.Fsm.GameObject.name == "Knight Dung Trail(Clone)" && self.Fsm.Name == "Control" && self.State.Name == "Init")
             {
-                float dungScaling = (PlayerDataAccess.equippedCharm_14 ? LS.defendersCrestSteadyBodyRadius : LS.defendersCrestRadius);
+                float dungScaling = (PlayerDataAccess.equippedCharm_14 ? GS.defendersCrestSteadyBodyRadius : GS.defendersCrestRadius);
                 self.Fsm.GameObject.transform.localScale = new Vector3(dungScaling, dungScaling, 0);
             }
         }
@@ -1139,7 +1187,7 @@ namespace CharmReValance
         {
             if (self.Fsm.GameObject.name == "Dung" && self.Fsm.Name == "Control" && self.State.Name == "Equipped")
             {
-                self.frequency.Value = LS.defendersCrestFrequency;
+                self.frequency.Value = GS.defendersCrestFrequency;
             }
 
             orig(self);
@@ -1155,12 +1203,12 @@ namespace CharmReValance
             // Regular Soul
             cursor.TryGotoNext(i => i.MatchLdcI4(33));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(soul => LS.regularDreamNailSoulGain);
+            cursor.EmitDelegate<Func<int, int>>(soul => GS.regularDreamNailSoulGain);
 
             // Charm Soul
             cursor.TryGotoNext(i => i.MatchLdcI4(66));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(soul => LS.dreamWielderSoulGain);
+            cursor.EmitDelegate<Func<int, int>>(soul => GS.dreamWielderSoulGain);
         }
         private void DreamWielderEssence(ILContext il)
         {
@@ -1169,47 +1217,26 @@ namespace CharmReValance
             // High Chance w/ Dream Wielder
             cursor.TryGotoNext(i => i.MatchLdcI4(40));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(chanceLow => LS.dreamWielderEssenceChanceHigh);
+            cursor.EmitDelegate<Func<int, int>>(chanceLow => GS.dreamWielderEssenceChanceHigh);
 
             // Low Chance w/ Dream Wielder
             cursor.TryGotoNext(i => i.MatchLdcI4(200));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(chanceHigh => LS.dreamWielderEssenceChanceLow);
+            cursor.EmitDelegate<Func<int, int>>(chanceHigh => GS.dreamWielderEssenceChanceLow);
 
             // Low Chance w/o Dream Wielder
             cursor.TryGotoNext(i => i.MatchLdcI4(300));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(chanceLow => LS.regularEssenceChanceLow);
+            cursor.EmitDelegate<Func<int, int>>(chanceLow => GS.regularEssenceChanceLow);
 
             // High Chance w/o Dream Wielder
             cursor.TryGotoNext(i => i.MatchLdcI4(60));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(chanceHigh => LS.regularEssenceChanceHigh);
-        }
-        private void DreamNailSize(On.HutongGames.PlayMaker.Actions.ActivateGameObject.orig_OnEnter orig, ActivateGameObject self)
-        {
-            if (self.Fsm.GameObject.name == "Knight" && self.Fsm.Name == "Dream Nail" && self.State.Name == "Slash")
-            {
-                float dnScale = (PlayerDataAccess.equippedCharm_30 && PlayerDataAccess.equippedCharm_33 ? LS.dreamWielderSpellTwisterRange : LS.regularDreamNailRange);
-                self.gameObject.GameObject.Value.SetScale(dnScale, dnScale);
-            }
-
-            orig(self);
-        }
-        private void DreamNailSpriteSize(On.HutongGames.PlayMaker.Actions.Tk2dPlayAnimation.orig_OnEnter orig, Tk2dPlayAnimation self)
-        {
-            if (self.Fsm.GameObject.name == "Knight" && self.Fsm.Name == "Dream Nail" && self.State.Name == "Slash")
-            {
-                float dnScale = (PlayerDataAccess.equippedCharm_30 && PlayerDataAccess.equippedCharm_33 ? LS.dreamWielderSpellTwisterRange : LS.regularDreamNailRange);
-                self.gameObject.GameObject.Value.SetScale(dnScale, dnScale);
-            }
-
-            orig(self);
+            cursor.EmitDelegate<Func<int, int>>(chanceHigh => GS.regularEssenceChanceHigh);
         }
         #endregion
 
 //	Dreamshield
-//  TODO: needs to block or reflect crystal hunter projectiles
         #region Dreamshield Changes
         private void DreamshieldOverheal(On.EnemyDreamnailReaction.orig_RecieveDreamImpact orig, EnemyDreamnailReaction self)
         {
@@ -1217,8 +1244,8 @@ namespace CharmReValance
 
             if (PlayerDataAccess.equippedCharm_38)
             {
-                int overhealMax = LS.regularMaximumOverheal
-                    + (PlayerDataAccess.equippedCharm_8 ? LS.dreamshieldLifebloodHeartOverhealMaxIncrease : 0);
+                int overhealMax = GS.regularMaximumOverheal
+                    + (PlayerDataAccess.equippedCharm_8 ? GS.dreamshieldLifebloodHeartOverhealMaxIncrease : 0);
                 if (PlayerDataAccess.healthBlue < overhealMax)
                 {
                     EventRegister.SendEvent("ADD BLUE HEALTH");
@@ -1228,31 +1255,56 @@ namespace CharmReValance
         }
         private void DreamshieldDamageAndKnockback(On.HutongGames.PlayMaker.Actions.SendEventByName.orig_OnEnter orig, SendEventByName self)
         {
-            if (self.Fsm.GameObject.name == "Shield" && self.Fsm.Name == "Shield Hit" &&
-                (self.State.Name == "Hit" || self.State.Name == "Parent?" || self.State.Name == "G Parent?"))
+            if (self.Fsm.GameObject.name == "Shield" && self.Fsm.Name == "Shield Hit")
             {
-                //  Disable vanilla damage
-                self.State.DisableAction(6);
-                self.State.DisableAction(8);
-
-                if (self.State.Name == "Hit")
+                //  Apply damage to enemy
+                if ((self.State.Name == "Hit" || self.State.Name == "Parent?" || self.State.Name == "G Parent?"))
                 {
-                    //  Apply damage via HitTaker instead
-                    HitTaker.Hit(self.eventTarget.gameObject.GameObject.Value, new HitInstance
+                    //  Disable vanilla damage
+                    self.State.DisableAction(6);
+                    self.State.DisableAction(8);
+
+                    if (self.State.Name == "Hit")
                     {
-                        Source = dreamshield,
-                        AttackType = AttackTypes.Spell,
-                        CircleDirection = true,
-                        DamageDealt = LS.dreamshieldBaseDamage + (int)(PlayerDataAccess.dreamOrbs / LS.dreamshieldDamageScaleRate),
-                        Direction = 0f,
-                        IgnoreInvulnerable = false,
-                        MagnitudeMultiplier = LS.dreamshieldKnockback,
-                        MoveAngle = 0f,
-                        MoveDirection = true,
-                        Multiplier = 1f,
-                        SpecialType = SpecialTypes.None,
-                        IsExtraDamage = false
-                    }, 3);
+                        //  Apply damage via HitTaker instead
+                        HitTaker.Hit(self.eventTarget.gameObject.GameObject.Value, new HitInstance
+                        {
+                            Source = dreamshield,
+                            AttackType = AttackTypes.Spell,
+                            CircleDirection = true,
+                            DamageDealt = GS.dreamshieldBaseDamage + (int)(PlayerDataAccess.dreamOrbs / GS.dreamshieldDamageScaleRate),
+                            Direction = 0f,
+                            IgnoreInvulnerable = false,
+                            MagnitudeMultiplier = GS.dreamshieldKnockback,
+                            MoveAngle = 0f,
+                            MoveDirection = true,
+                            Multiplier = 1f,
+                            SpecialType = SpecialTypes.None,
+                            IsExtraDamage = false
+                        }, 3);
+                    }
+                }
+                else if (self.State.Name == "Send Event")
+                {
+                    GameObject collider = self.Fsm.GetFsmGameObject("Collider").Value;
+                    //  Play block effect for deflectable projectiles
+                    if (collider.name.Contains("Shot"))
+                    {
+                        foreach (PlayMakerFSM f in dreamshield.FindGameObjectInChildren("Shield").GetComponents<PlayMakerFSM>())
+                            if (f.Fsm.Name == "Block Effect")
+                                f.SetState("Block");
+                    }
+                    //  Block crystal shot from crystal hunters
+                    if (collider.name.StartsWith("Crystal Shot"))
+                    {
+                        collider.GetComponent<SpriteRenderer>().enabled = false;
+                        collider.FindGameObjectInChildren("Growth").SetActive(true);
+                        collider.GetComponent<Rigidbody2D>().velocity = new Vector2(0, 0);
+                        foreach (PlayMakerFSM f in collider.GetComponents<PlayMakerFSM>())
+                            if (f.Fsm.Name == "Crystal Form" && (f.ActiveStateName == "Idle" || f.ActiveStateName == "Grown"))
+                                f.SetState("Smash");
+                        //Log("Blocked crystal shot");
+                    }
                 }
             }
 
@@ -1262,7 +1314,11 @@ namespace CharmReValance
         {
             if (self.Fsm.GameObject.name == "Shield" && self.Fsm.Name == "Shield Hit" && self.State.Name == "Break")
             {
-                self.time.Value = (PlayerDataAccess.equippedCharm_10 ? LS.dreamshieldDefendersCrestReformTime : LS.dreamshieldReformationTime);
+                float cooldown = GS.dreamshieldReformationTime
+                    - (PlayerDataAccess.equippedCharm_10 ? GS.dreamshieldDefendersCrestReformTimeReduction : 0f)
+                    - (PlayerDataAccess.equippedCharm_30 ? GS.dreamshieldDreamWielderReformTimeReduction : 0f);
+                self.time.Value = cooldown;
+                Log("Dreamshield Cooldown: " + cooldown);
             }
 
             orig(self);
@@ -1303,7 +1359,7 @@ namespace CharmReValance
                 int facing = (HeroController.instance.cState.facingRight ? 1 : -1);
 
                 //  Set shield scale
-                dreamshield.transform.GetChild(1).SetScaleMatching(-LS.dreamshieldSizeScale);
+                dreamshield.transform.GetChild(1).SetScaleMatching(-GS.dreamshieldSizeScale);
 
                 //  Set shield position lower relative to knight
                 dreamshield.transform.SetPosition2D(HeroController.instance.transform.GetPositionX() + (facing * 0.3f), HeroController.instance.transform.GetPositionY() - 0.35f);
@@ -1312,20 +1368,20 @@ namespace CharmReValance
                 float currentRotation = dreamshield.transform.eulerAngles.z;
                 float targetRotation;
                 if (PlayerDataAccess.atBench)
-                    targetRotation = 82;
+                    targetRotation = (90 - (facing * 8));
                 else if (HeroController.instance.vertical_input != 0f)
-                    targetRotation = (90 + (facing * LS.dreamshieldOverheadOffset));
+                    targetRotation = (90 + (facing * GS.dreamshieldOverheadOffset));
                 else
                     targetRotation = (90 + (facing * 90f));
-                float rotationSpeed = (targetRotation - currentRotation) * LS.dreamshieldTweenSpeed;
+                float rotationSpeed = (targetRotation - currentRotation) * GS.dreamshieldTweenSpeed;
                 if (rotationSpeed > -5f && rotationSpeed < 5f) rotationSpeed = 0f;
                 dreamshieldRotation.zAngle = rotationSpeed;
 
                 //  Set shield distance from knight
-                dreamshield.transform.GetChild(1).transform.localPosition = new Vector3(LS.dreamshieldSizeScale * 2f, facing * 0.15f, 0f);
+                dreamshield.FindGameObjectInChildren("Shield").transform.localPosition = new Vector3(GS.dreamshieldSizeScale * 2f, facing * 0.15f, 0f);
                 
                 //  Reduce particle emission
-                dreamshield.transform.GetChild(1).transform.GetChild(0).transform.GetComponent<ParticleSystem>().emissionRate = 7;
+                dreamshield.FindGameObjectInChildren("Shield").transform.GetChild(0).transform.GetComponent<ParticleSystem>().emissionRate = 7;
 
                 //Log("Affected shield scale, rotation, and local position.");
                 return;
@@ -1333,23 +1389,19 @@ namespace CharmReValance
         }
         private void DreamshieldBlockDetection(On.HeroController.orig_TakeDamage orig, HeroController self, GameObject go, CollisionSide damageSide, int damageAmount, int hazardType)
         {
-            if (HeroControllerR.CanTakeDamage()
-                && !(self.damageMode == DamageMode.HAZARD_ONLY && hazardType == 1)
-                && !(self.cState.shadowDashing && hazardType == 1)
-                && !(self.parryInvulnTimer > 0f && hazardType == 1))
+            if (hazardType == 1 && HeroControllerR.CanTakeDamage()
+                && !(self.damageMode == DamageMode.HAZARD_ONLY) && !self.cState.shadowDashing && !(self.parryInvulnTimer > 0f)
+                && GS.dreamshieldBlocksBehind && PlayerDataAccess.equippedCharm_38 && HeroController.instance.vertical_input == 0f
+                && dreamshield.FindGameObjectInChildren("Shield").gameObject.LocateMyFSM("Shield Hit").Fsm.ActiveStateName != "Break"
+                && ((self.cState.facingRight && damageSide == CollisionSide.left) || (!self.cState.facingRight && damageSide == CollisionSide.right)))
             {
-                if (LS.dreamshieldBlocksBehind && PlayerDataAccess.equippedCharm_38 && HeroController.instance.vertical_input == 0f
-                    && dreamshield.transform.FindChild("Shield").gameObject.LocateMyFSM("Shield Hit").Fsm.ActiveStateName != "Break"
-                    && ((self.cState.facingRight && damageSide == CollisionSide.left)
-                    || (!self.cState.facingRight && damageSide == CollisionSide.right)))
-                {
-                    dreamshieldBlock = true;
-                    hazardType = 0; //  flagging hazardType to bypass Carefree Melody and Baldur Shell checks
-                    GameManager.instance.StartCoroutine(DreamshieldBlocked());
-                    //Log("Hero facing " + (self.cState.facingRight ? "right" : "left"));
-                    //Log("hit from " + damageSide.ToString() + " by hazard type " + hazardType);
-                    //Log("dreamshield should block this attack");
-                }
+                dreamshieldBlock = true;
+                hazardType = 0; //  flagging hazardType to bypass Carefree Melody and Baldur Shell checks
+                GameManager.instance.StartCoroutine(DreamshieldBlocked());
+                //Log("Hero facing " + (self.cState.facingRight ? "right" : "left"));
+                //Log("hit from " + damageSide.ToString() + " by hazard type " + hazardType);
+                //Log("dreamshield should block this attack");
+                
             }
 
             orig(self, go, damageSide, damageAmount, hazardType);
@@ -1359,7 +1411,7 @@ namespace CharmReValance
             if (dreamshieldBlock)
             {
                 dreamshieldBlock = false;
-                var shield = dreamshield.transform.FindChild("Shield").gameObject;
+                var shield = dreamshield.FindGameObjectInChildren("Shield").gameObject;
                 shield.LocateMyFSM("Shield Hit").SetState("Tink");
                 return 0;
             }
@@ -1399,38 +1451,27 @@ namespace CharmReValance
             {
                 if (self.State.ActiveActionIndex == 0)
                 {
-                    self.x.Value = -LS.dreamshieldSizeScale;
-                    self.y.Value = LS.dreamshieldSizeScale;
+                    self.x.Value = -GS.dreamshieldSizeScale;
+                    self.y.Value = GS.dreamshieldSizeScale;
                 }
                 else if (self.State.ActiveActionIndex == 1)
                 {
-                    self.x.Value = LS.dreamshieldSizeScale;
-                    self.y.Value = LS.dreamshieldSizeScale;
+                    self.x.Value = GS.dreamshieldSizeScale;
+                    self.y.Value = GS.dreamshieldSizeScale;
                 }
                 else if (self.State.ActiveActionIndex == 3)
                 {
-                    self.x.Value = -LS.dreamshieldSizeScale;
-                    self.y.Value = LS.dreamshieldSizeScale;
+                    self.x.Value = -GS.dreamshieldSizeScale;
+                    self.y.Value = GS.dreamshieldSizeScale;
                 }
                 else if (self.State.ActiveActionIndex == 4)
                 {
-                    self.x.Value = LS.dreamshieldSizeScale;
-                    self.y.Value = LS.dreamshieldSizeScale;
+                    self.x.Value = GS.dreamshieldSizeScale;
+                    self.y.Value = GS.dreamshieldSizeScale;
                 }
             }
 
             orig(self);
-        }
-        private void DreamshieldDebugLogging(On.HutongGames.PlayMaker.Actions.GetLayer.orig_OnEnter orig, GetLayer self)
-        {
-            orig(self);
-
-            if (self.Fsm.GameObjectName == "Shield" && self.Fsm.Name == "Shield Hit" && self.State.Name == "Type")
-            {
-                Log("Collider: " + self.Fsm.Variables.GameObjectVariables.GetValue(0).ToString());
-                Log("Tag: " + self.Fsm.Variables.StringVariables.GetValue(0));
-                Log("Layer: " + self.Fsm.Variables.IntVariables.GetValue(0));
-            }
         }
         //  Disable elements of the vanilla Dreamshield
         private void DreamshieldFSMPrep(On.PlayMakerFSM.orig_OnEnable orig, PlayMakerFSM self)
@@ -1438,7 +1479,7 @@ namespace CharmReValance
             if (self.Fsm.GameObject.name == "Shield" && self.Fsm.Name == "Shield Hit")
             {
                 //  Ignore Geo Collisions
-                var state = Satchel.FsmUtil.GetState(self, "Type");
+                var state = Satchel.FsmUtil.GetValidState(self, "Type");
                 if (state.Actions.Length == 7)
                 {
                     var ignoreGeo = Satchel.FsmUtil.GetAction<StringCompare>(state, 4);
@@ -1448,12 +1489,23 @@ namespace CharmReValance
                 }
 
                 //  Remove Slash Responder
-                state = Satchel.FsmUtil.GetState(self, "Idle");
+                state = Satchel.FsmUtil.GetValidState(self, "Idle");
                 if (state.Transitions.Length > 1)
                     Satchel.FsmUtil.RemoveTransition(state, "SLASH");
             }
 
             orig(self);
+        }
+        //  Set crystal shot to a layer that dreamshield can interact with
+        private void CrystalShotBlockable(On.HutongGames.PlayMaker.Actions.FireAtTarget.orig_OnEnter orig, FireAtTarget self)
+        {
+            orig(self);
+
+            if (self.Fsm.GameObject.name.StartsWith("Crystal Flyer"))
+            {
+                var shot = self.gameObject.GameObject.Value;
+                shot.layer = 17;
+            }
         }
         #endregion
 
@@ -1466,89 +1518,89 @@ namespace CharmReValance
             // Fluke Lifetime
             cursor.TryGotoNext(i => i.MatchLdcR4(2f));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(minimum => LS.flukeLifetimeMin);
+            cursor.EmitDelegate<Func<float, float>>(minimum => GS.flukeLifetimeMin);
 
             cursor.TryGotoNext(i => i.MatchLdcR4(3f));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(maximum => LS.flukeLifetimeMax);
+            cursor.EmitDelegate<Func<float, float>>(maximum => GS.flukeLifetimeMax);
 
             // Shaman Stone Sizes
             cursor.TryGotoNext(i => i.MatchLdcR4(0.9f));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(minimum => LS.flukeShamanStoneSizeMin);
+            cursor.EmitDelegate<Func<float, float>>(minimum => GS.flukeShamanStoneSizeMin);
 
             cursor.TryGotoNext(i => i.MatchLdcR4(1.2f));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(maximum => LS.flukeShamanStoneSizeMax);
+            cursor.EmitDelegate<Func<float, float>>(maximum => GS.flukeShamanStoneSizeMax);
 
             // Shaman Stone Damage
             cursor.TryGotoNext(i => i.MatchLdcI4(5));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(damage => LS.flukeShamanStoneDamage + (furyActive ? LS.flukeFotFDamageIncrease : 0));
+            cursor.EmitDelegate<Func<int, int>>(damage => GS.flukeShamanStoneDamage + (furyActive ? GS.flukeFotFDamageIncrease : 0));
 
             // Regular Sizes
             cursor.TryGotoNext(i => i.MatchLdcR4(0.7f));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(minimum => LS.flukeSizeMin);
+            cursor.EmitDelegate<Func<float, float>>(minimum => GS.flukeSizeMin);
 
             cursor.TryGotoNext(i => i.MatchLdcR4(0.9f));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(maximum => LS.flukeSizeMax);
+            cursor.EmitDelegate<Func<float, float>>(maximum => GS.flukeSizeMax);
 
             // Regular Damage
             cursor.TryGotoNext(i => i.MatchLdcI4(4));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(damage => LS.flukeDamage + (furyActive ? LS.flukeFotFDamageIncrease : 0));
+            cursor.EmitDelegate<Func<int, int>>(damage => GS.flukeDamage + (furyActive ? GS.flukeFotFDamageIncrease : 0));
         }
-        private void FlukenestCount(On.HutongGames.PlayMaker.Actions.FlingObjectsFromGlobalPool.orig_OnEnter orig, FlingObjectsFromGlobalPool self)
+        private void FlukeCount(On.HutongGames.PlayMaker.Actions.FlingObjectsFromGlobalPool.orig_OnEnter orig, FlingObjectsFromGlobalPool self)
         {
             // Vengeful Spirit
             if(self.Fsm.GameObject.name == "Fireball Top(Clone)" && self.Fsm.Name == "Fireball Cast" && self.State.Name == "Flukes")
             {
-                self.spawnMin.Value = LS.flukenestVSFlukes;
-                self.spawnMax.Value = LS.flukenestVSFlukes;
+                self.spawnMin.Value = GS.flukenestVSFlukes;
+                self.spawnMax.Value = GS.flukenestVSFlukes;
             }
 
             // Shade Soul
             else if (self.Fsm.GameObject.name == "Fireball2 Top(Clone)" && self.Fsm.Name == "Fireball Cast" && self.State.Name == "Flukes")
             {
-                self.spawnMin.Value = LS.flukenestSSFlukes;
-                self.spawnMax.Value = LS.flukenestSSFlukes;
+                self.spawnMin.Value = GS.flukenestSSFlukes;
+                self.spawnMax.Value = GS.flukenestSSFlukes;
             }
 
             orig(self);
         }
-        private void FlukenestDCContactDamage(On.HealthManager.orig_TakeDamage orig, HealthManager self, HitInstance hitInstance)
+        private void VolatileFlukeContactDamage(On.HutongGames.PlayMaker.Actions.TakeDamage.orig_OnEnter orig, TakeDamage self)
         {
-            if (PlayerDataAccess.equippedCharm_11 && PlayerDataAccess.equippedCharm_10)
+            if (self.Fsm.GameObject.name == "Damager" && self.Fsm.Name == "damages_enemy")
             {
-                if (hitInstance.Source.gameObject.transform.parent.name == "Spell Fluke Dung Lv1(Clone)")
+                if (self.Fsm.GameObject.transform.parent.gameObject.name.StartsWith("Spell Fluke Dung Lv1"))
                 {
-                    hitInstance.DamageDealt = (PlayerDataAccess.equippedCharm_19 ? LS.flukenestDCShamanStoneVSDamage : LS.flukenestDefendersCrestVSDamage);
+                    self.DamageDealt = (PlayerDataAccess.equippedCharm_19 ? GS.volatileFlukeShamanStoneLv1ContactDamage : GS.volatileFlukeLv1ContactDamage);
                 }
-                else if (hitInstance.Source.gameObject.transform.parent.name == "Spell Fluke Dung Lv2(Clone)")
+                else if (self.Fsm.GameObject.transform.parent.gameObject.name.StartsWith("Spell Fluke Dung Lv2"))
                 {
-                    hitInstance.DamageDealt = (PlayerDataAccess.equippedCharm_19 ? LS.flukenestDCShamanStoneSSDamage : LS.flukenestDefendersCrestSSDamage);
+                    self.DamageDealt = (PlayerDataAccess.equippedCharm_19 ? GS.volatileFlukeShamanStoneLv2ContactDamage : GS.volatileFlukeLv2ContactDamage);
                 }
             }
 
-            orig(self, hitInstance);
+            orig(self);
         }
-        private void FlukenestDCCloud(On.HutongGames.PlayMaker.Actions.Wait.orig_OnEnter orig, Wait self)
+        private void VolatileFlukeCloud(On.HutongGames.PlayMaker.FsmState.orig_OnEnter orig, FsmState self)
         {
-            //Log(self.Fsm.GameObject.name + "-" + self.Fsm.Name + "   " + self.State.Name);
-            if (self.Fsm.GameObject.name.StartsWith("Spell Fluke Dung") && self.Fsm.Name == "Control" && self.State.Name == "Blow")
+            if (self.Fsm.GameObject.name.StartsWith("Spell Fluke Dung") && self.Fsm.Name == "Control" && self.Name == "Blow")
             {
-                float cloudDuration = (PlayerDataAccess.equippedCharm_19 ? LS.flukenestDCShamanStoneDuration : LS.flukenestDefendersCrestDuration);
-                //Log("BLOW Original duration: " + self.time.Value);
-                self.time.Value = cloudDuration + 1f;
-                self.Fsm.GameObject.GetComponent<Rigidbody2D>().velocity = Vector2.zero;    //  stop moving after the explosion
-                //Log("BLOW Modified duration: " + self.time.Value);
+                var waitAction = self.GetFirstActionOfType<Wait>();
+                float cloudDuration = (PlayerDataAccess.equippedCharm_19 ? GS.volatileFlukeShamanStoneCloudDuration : GS.volatileFlukeCloudDuration);
+                //Log("BLOW Original duration: " + waitAction.time.Value);
+                waitAction.time.Value = cloudDuration + 1f;
+                //self.Fsm.GameObject.GetComponent<Rigidbody2D>().velocity = Vector2.zero;    //  stop moving after the explosion
+                //Log("BLOW Modified duration: " + waitAction.time.Value);
 
                 //  Cloud Visuals
                 ParticleSystem cloudPT = self.Fsm.Variables.GetFsmGameObject("Dung Cloud").Value.transform.Find("Pt Normal").GetComponent<ParticleSystem>();
                 //ParticleSystem cloudPT = self.Fsm.GameObject.transform.Find("Pt Normal").GetComponent<ParticleSystem>();
-                float cloudRadius = (PlayerDataAccess.equippedCharm_19 ? LS.flukenestDCShamanStoneRadius : LS.flukenestDefendersCrestRadius);
+                float cloudRadius = (PlayerDataAccess.equippedCharm_19 ? GS.volatileFlukeShamanStoneCloudRadius : GS.volatileFlukeCloudRadius);
                 //Log("Original startLifetime: " + cloudPT.startLifetime);
                 //Log("Original startSpeed: " + cloudPT.startSpeed);
                 cloudPT.startLifetime = cloudDuration + 0.4f;
@@ -1556,26 +1608,37 @@ namespace CharmReValance
                 //Log("Modified startLifetime: " + cloudPT.startLifetime);
                 //Log("Modified startSpeed: " + cloudPT.startSpeed);
             }
-            else if (self.Fsm.GameObject.name.StartsWith("Knight Dung Cloud") && self.Fsm.Name == "Control" && self.State.Name == "Collider On")
+            else if (self.Fsm.GameObject.name.StartsWith("Knight Dung Cloud") && self.Fsm.Name == "Control" && self.Name == "Collider On")
             {
                 // Duration & Visuals
-                float cloudDuration = (PlayerDataAccess.equippedCharm_19 ? LS.flukenestDCShamanStoneDuration : LS.flukenestDefendersCrestDuration);
-                //Log("COLLIDER Original duration: " + self.time.Value);
-                self.time.Value = cloudDuration;
-                //Log("COLLIDER Modified duration: " + self.time.Value);
+                var waitAction = self.GetFirstActionOfType<Wait>();
+                float cloudDuration = (PlayerDataAccess.equippedCharm_19 ? GS.volatileFlukeShamanStoneCloudDuration : GS.volatileFlukeCloudDuration);
+                waitAction.time.Value = cloudDuration;
+                Log("Fluke Cloud Duration: " + waitAction.time.Value);
 
                 // Cloud Radius
                 CircleCollider2D bigFlukeCollider = self.Fsm.GameObject.GetComponent<UnityEngine.CircleCollider2D>();
-                //Log("Original cloud radius: " + bigFlukeCollider.radius);
-                bigFlukeCollider.radius = (PlayerDataAccess.equippedCharm_19 ? LS.flukenestDCShamanStoneRadius : LS.flukenestDefendersCrestRadius);
-                //Log("Modified cloud radius: " + bigFlukeCollider.radius);
+                bigFlukeCollider.radius = (PlayerDataAccess.equippedCharm_19 ? GS.volatileFlukeShamanStoneCloudRadius : GS.volatileFlukeCloudRadius);
+                Log("Fluke Cloud Radius: " + bigFlukeCollider.radius);
 
                 // Damage Rates
+                int flukeLv = PlayerDataAccess.fireballLevel;
+                float cloudDamage = PlayerDataAccess.equippedCharm_19 ? GS.volatileFlukeShamanStoneLv1CloudDamage : GS.volatileFlukeLv1CloudDamage;
+                if (flukeLv == 2) cloudDamage = PlayerDataAccess.equippedCharm_19 ? GS.volatileFlukeShamanStoneLv2CloudDamage : GS.volatileFlukeLv2CloudDamage;
+                if (furyActive && PlayerDataAccess.equippedCharm_19) cloudDamage *= 0.85f;
                 DamageEffectTicker bigFLukeDET = self.Fsm.GameObject.GetComponent<DamageEffectTicker>();
-                //Log("Original damage rate: " + bigFLukeDET.damageInterval);
-                bigFLukeDET.SetDamageInterval(PlayerDataAccess.equippedCharm_19 ? LS.flukenestDCShamanStoneDamageRate : LS.flukenestDefendersCrestDamageRate);
-                bigFLukeDET.extraDamageType = (PlayerDataAccess.fireballLevel == 2 ? ExtraDamageTypes.Dung2 : ExtraDamageTypes.Dung);
-                //Log("Modified damage rate: " + bigFLukeDET.damageInterval);
+                bigFLukeDET.damageInterval = GetTickRate(cloudDamage, cloudDuration);
+                bigFLukeDET.extraDamageType = (furyActive ? ExtraDamageTypes.Dung2 : ExtraDamageTypes.Dung);
+                Log("Fluke Cloud Damage: " + (cloudDamage * (furyActive ? 2 : 1)));
+            }
+
+            orig(self);
+        }
+        private void VolatileFlukeCloudStopMoving(On.HutongGames.PlayMaker.Actions.Wait.orig_OnEnter orig, Wait self)
+        {
+            if (self.Fsm.GameObject.name.StartsWith("Spell Fluke Dung") && self.Fsm.Name == "Control" && self.State.Name == "Blow")
+            {
+                self.Fsm.GameObject.GetComponent<Rigidbody2D>().velocity = Vector2.zero;    //  stop moving after the explosion
             }
 
             orig(self);
@@ -1584,13 +1647,13 @@ namespace CharmReValance
 
 //	Fragile Charms
         #region Fragile Charms Changes
-		
-		//	Fragile Charms Break
+
+        //	Fragile Charms Break
         private void FragileCharmsBreak(On.HutongGames.PlayMaker.Actions.PlayerDataBoolTest.orig_OnEnter orig, PlayerDataBoolTest self)
         {
             if (self.Fsm.GameObject.name == "Hero Death" && self.Fsm.Name == "Hero Death Anim" && self.State.Name.StartsWith("Break Glass ") && self.boolName.Value.EndsWith("_unbreakable"))
             {
-                self.isFalse = LS.fragileCharmsBreak ? null : FsmEvent.GetFsmEvent("FINISHED");
+                self.isFalse = GS.fragileCharmsBreak ? null : FsmEvent.GetFsmEvent("FINISHED");
             }
 
             orig(self);
@@ -1602,7 +1665,7 @@ namespace CharmReValance
             while(cursor.TryGotoNext(i => i.MatchLdcR4(0.2f)))
             {
                 cursor.GotoNext();
-                cursor.EmitDelegate<Func<float, float>>(geoScale => LS.greedGeoIncrease / 100f);
+                cursor.EmitDelegate<Func<float, float>>(geoScale => GS.greedGeoIncrease / 100f);
             }
         }
         //  Geo Grants Soul
@@ -1627,7 +1690,7 @@ namespace CharmReValance
             ))
             {
                 cursor.GotoNext();
-                cursor.EmitDelegate<Func<int, int>>(masks => LS.heartMasks);
+                cursor.EmitDelegate<Func<int, int>>(masks => GS.heartMasks);
             }
         }
 		//	Ignore vanilla Strength damage multiplier
@@ -1647,7 +1710,7 @@ namespace CharmReValance
         {
             if (self.Fsm.GameObject.name == "Charm Effects" && self.Fsm.Name == "Fury")
             {
-                int bloodiedValue = (int)((PlayerData.instance.maxHealth + (PlayerDataAccess.equippedCharm_27 ? PlayerDataAccess.joniHealthBlue : 0)) * (PlayerDataAccess.overcharmed ? 99 : LS.furyOfTheFallenThreshold));
+                int bloodiedValue = (int)((PlayerData.instance.maxHealth + (PlayerDataAccess.equippedCharm_27 ? PlayerDataAccess.joniHealthBlue : 0)) * (PlayerDataAccess.overcharmed ? 99 : GS.furyOfTheFallenThreshold));
                 if (self.State.Name == "Check HP")
                 {
                     self.integer1 = PlayerDataAccess.health + (PlayerDataAccess.equippedCharm_27 ? PlayerDataAccess.healthBlue : 0);
@@ -1667,7 +1730,7 @@ namespace CharmReValance
         private void FotFActiveOvercharmed(On.HeroController.orig_NearBench orig, HeroController self, bool isNearBench)
         {
             //Log("On.HeroController.NearBench");
-            if (LS.furyOfTheFallenOvercharmed && PlayerDataAccess.equippedCharm_6 && PlayerDataAccess.overcharmed)
+            if (GS.furyOfTheFallenOvercharmed && PlayerDataAccess.equippedCharm_6 && PlayerDataAccess.overcharmed)
             {
                 //Log("Fury should be active due to overcharm");
                 HeroController.instance.gameObject.transform.Find("Charm Effects").gameObject.LocateMyFSM("Fury").SendEvent("HERO DAMAGED");
@@ -1736,29 +1799,38 @@ namespace CharmReValance
                 // Spawn Cost
                 if (self.State.Name == "Can Hatch?")
                 {
-                    int spawnCost = LS.glowingWombSpawnCost
-                        - (PlayerDataAccess.equippedCharm_1 ? LS.glowingWombGatheringSwarmCostReduction : 0)
-                        - (PlayerDataAccess.equippedCharm_40 && PlayerDataAccess.grimmChildLevel == 5 ? LS.glowingWombCarefreeMelodyCostReduction : 0);
+                    int spawnCost = GS.glowingWombSpawnCost
+                        - (PlayerDataAccess.equippedCharm_1 ? GS.glowingWombGatheringSwarmCostReduction : 0)
+                        - (PlayerDataAccess.equippedCharm_40 && PlayerDataAccess.grimmChildLevel == 5 ? GS.glowingWombCarefreeMelodyCostReduction : 0);
                     self.integer2.Value = spawnCost;
                 }
 
                 // Spawn Max
                 else if (self.State.Name == "Check Count")
                 {
-                    self.integer2.Value = (PlayerDataAccess.equippedCharm_1 ? LS.glowingWombGatheringSwarmSpawnTotal : LS.glowingWombSpawnTotal);
+                    self.integer2.Value = (PlayerDataAccess.equippedCharm_1 ? GS.glowingWombGatheringSwarmSpawnTotal : GS.glowingWombSpawnTotal);
                 }
+            }
+
+            orig(self);
+        }
+        private void HatchlingSpawnRate(On.HutongGames.PlayMaker.Actions.Wait.orig_OnEnter orig, Wait self)
+        {
+            if (self.Fsm.GameObject.name == "Charm Effects" && self.Fsm.Name == "Hatchling Spawn" && self.State.Name == "Equipped")
+            {
+                self.time.Value = (PlayerDataAccess.equippedCharm_1 ? GS.glowingWombGatheringSwarmSpawnRate : GS.glowingWombSpawnRate);
             }
 
             orig(self);
         }
         private void HatchlingDamage(On.KnightHatchling.orig_OnEnable orig, KnightHatchling self)
         {
-            int damageModifier = (PlayerDataAccess.equippedCharm_1 ? -LS.glowingWombGatheringSwarmDamageReduction : 0)
-                + (PlayerDataAccess.equippedCharm_11 ? LS.glowingWombFlukenestDamageIncrease : 0);
-            self.normalDetails.damage = Math.Max(LS.glowingWombDamage + damageModifier, 1);
-            self.dungDetails.damage = Math.Max(LS.glowingWombDefendersCrestDamage + damageModifier, 1);
+            int damageModifier = (PlayerDataAccess.equippedCharm_1 ? -GS.glowingWombGatheringSwarmDamageReduction : 0)
+                + (PlayerDataAccess.equippedCharm_11 ? GS.glowingWombFlukenestDamageIncrease : 0);
+            self.normalDetails.damage = Math.Max(GS.glowingWombDamage + damageModifier, 1);
+            self.dungDetails.damage = Math.Max(GS.glowingWombDefendersCrestDamage, 1);
 
-            if (LS.glowingWombPiercing)
+            if (GS.glowingWombPiercing)
                 self.damageEnemies.attackType = AttackTypes.Spell;
             else
                 self.damageEnemies.attackType = AttackTypes.Generic;
@@ -1766,26 +1838,33 @@ namespace CharmReValance
 
             orig(self);
         }
-        private void GlowingWombDungCloudDamage(On.HutongGames.PlayMaker.Actions.Wait.orig_OnEnter orig, Wait self)
+        private void GlowingWombDungDamage(On.HutongGames.PlayMaker.FsmState.orig_OnEnter orig, FsmState self)
         {
-            // Glowing Womb Cloud
-            if (self.Fsm.GameObject.name == "Dung Explosion(Clone)" && self.Fsm.Name == "Explosion Control" && self.State.Name == "Explode")
+            if (self.Fsm.GameObject.name == "Dung Explosion(Clone)" && self.Fsm.Name == "Explosion Control" && self.Name == "Explode")
             {
                 // Duration & Visuals
-                self.time.Value = LS.glowingWombDefendersCrestDuration;
-                self.Fsm.GameObject.transform.Find("Particle System").GetComponent<ParticleSystem>().startLifetime = LS.glowingWombDefendersCrestDuration;
+                var waitAction = self.GetFirstActionOfType<Wait>();
+                float cloudDuration = (furyActive ? GS.glowingWombDefendersCrestFotFDuration : GS.glowingWombDefendersCrestDuration);
+                waitAction.time.Value = cloudDuration;
+                self.Fsm.GameObject.transform.Find("Particle System").GetComponent<ParticleSystem>().startLifetime = cloudDuration;
                 self.Fsm.GameObject.transform.Find("Particle System").GetComponent<ParticleSystem>().maxParticles = 120;
-                self.Fsm.GameObject.transform.Find("Particle System").GetComponent<ParticleSystem>().startSpeed = 3.5f * (1f / LS.glowingWombDefendersCrestDuration) * (LS.glowingWombDefendersCrestRadius / 6f);
+                self.Fsm.GameObject.transform.Find("Particle System").GetComponent<ParticleSystem>().startSpeed = 3.5f * (1f / cloudDuration) * (GS.glowingWombDefendersCrestRadius / 6f);
 
                 // Damage Rate
-                self.Fsm.GameObject.GetComponent<DamageEffectTicker>().damageInterval = LS.glowingWombDefendersCrestDamageRate;
-                self.Fsm.GameObject.GetComponent<DamageEffectTicker>().extraDamageType = ExtraDamageTypes.Spore;    //  1 damage per tick
-            }
-
-            // Hatchling Spawn Rate
-            else if (self.Fsm.GameObject.name == "Charm Effects" && self.Fsm.Name == "Hatchling Spawn" && self.State.Name == "Equipped")
-            {
-                self.time.Value = (PlayerDataAccess.equippedCharm_1 ? LS.glowingWombGatheringSwarmSpawnRate : LS.glowingWombSpawnRate);
+                float cloudDamage = GS.glowingWombDefendersCrestCloudDamage
+                    - (PlayerDataAccess.equippedCharm_1 ? GS.glowingWombGatheringSwarmDamageReduction : 0)
+                    + (PlayerDataAccess.equippedCharm_11 ? GS.glowingWombFlukenestDamageIncrease : 0)
+                    + (furyActive ? GS.glowingWombFotFDamageIncrease : 0);
+                if (furyActive)
+                {
+                    self.Fsm.GameObject.GetComponent<DamageEffectTicker>().damageInterval = GetTickRate(cloudDamage / 2, cloudDuration);
+                    self.Fsm.GameObject.GetComponent<DamageEffectTicker>().extraDamageType = ExtraDamageTypes.Dung2;    //  2 damage per tick
+                }
+                else
+                {
+                    self.Fsm.GameObject.GetComponent<DamageEffectTicker>().damageInterval = GetTickRate(cloudDamage, cloudDuration);
+                    self.Fsm.GameObject.GetComponent<DamageEffectTicker>().extraDamageType = ExtraDamageTypes.Dung;    //  1 damage per tick
+                }
             }
 
             orig(self);
@@ -1795,7 +1874,7 @@ namespace CharmReValance
             if (self.Fsm.GameObject.name == "Dung Explosion(Clone)" && self.Fsm.Name == "Explosion Control" && self.State.Name == "Explode")
             {
                 // Cloud Radius
-                self.Fsm.GameObject.GetComponent<UnityEngine.CircleCollider2D>().radius = LS.glowingWombDefendersCrestRadius;
+                self.Fsm.GameObject.GetComponent<UnityEngine.CircleCollider2D>().radius = GS.glowingWombDefendersCrestRadius;
                 //Log("Hatchling dung cloud radius set");
             }
 
@@ -1827,39 +1906,81 @@ namespace CharmReValance
             cursor.GotoNext();
             cursor.GotoNext();
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(HatchlingBonusDamage => LS.glowingWombFotFDamageIncrease);
+            cursor.EmitDelegate<Func<int, int>>(HatchlingBonusDamage => (PlayerDataAccess.equippedCharm_10 ? 0 : GS.glowingWombFotFDamageIncrease));
         }
         #endregion
 
 //	Grimmchild
         #region Grimmchild Changes
-        private void GrimmchildDamage(On.HutongGames.PlayMaker.Actions.SetIntValue.orig_OnEnter orig, SetIntValue self)
+        private void GrimmballDamager(On.HutongGames.PlayMaker.Actions.SendEventByName.orig_OnEnter orig, SendEventByName self)
         {
-            if (self.Fsm.GameObject.name == "Grimmchild(Clone)" && self.Fsm.Name == "Control")
+            if (self.Fsm.GameObject.name == "Enemy Damager" && self.Fsm.Name == "Attack" &&
+                (self.State.Name == "Hit" || self.State.Name == "Parent?" || self.State.Name == "G Parent?"))
             {
-                int damageModifier = (PlayerDataAccess.equippedCharm_11 ? LS.grimmchildFlukenestDamageIncrease : 0);
-                if (self.State.Name == "Level 2")
+                if (self.Fsm.GameObject.transform.parent.name == "Grimmball(Clone)")
                 {
-                    self.intValue.Value = LS.grimmchildDamage2 + damageModifier;
-                }
-                else if (self.State.Name == "Level 3")
-                {
-                    self.intValue.Value = LS.grimmchildDamage3 + damageModifier;
-                }
-                else if (self.State.Name == "Level 4")
-                {
-                    self.intValue.Value = LS.grimmchildDamage4 + damageModifier;
+                    //  Set Damage
+                    int grimmballDamage = (PlayerDataAccess.equippedCharm_11 ? GS.grimmchildFlukenestDamageIncrease : 0);
+                    if (PlayerDataAccess.grimmChildLevel == 2)
+                    {
+                        grimmballDamage += GS.grimmchildDamage2;
+                    }
+                    else if (PlayerDataAccess.grimmChildLevel == 3)
+                    {
+                        grimmballDamage += GS.grimmchildDamage3;
+                    }
+                    else if (PlayerDataAccess.grimmChildLevel == 4)
+                    {
+                        grimmballDamage += GS.grimmchildDamage4;
+                    }
+                    else Log("Grimmball damage not set");
+
+                    if (self.State.Name == "Hit")
+                    {
+                        //  Disable vanilla damage
+                        self.State.DisableAction(5);
+                        self.State.DisableAction(7);
+
+                        //  Apply damage via HitTaker instead
+                        GameObject grimmchild = self.Fsm.GameObject.transform.parent.gameObject;
+                        HitTaker.Hit(self.eventTarget.gameObject.GameObject.Value, new HitInstance
+                        {
+                            Source = grimmchild,
+                            AttackType = AttackTypes.Spell,
+                            CircleDirection = true,
+                            DamageDealt = grimmballDamage,
+                            Direction = 0f,
+                            IgnoreInvulnerable = false,
+                            MagnitudeMultiplier = 0f,
+                            MoveAngle = 0f,
+                            MoveDirection = true,
+                            Multiplier = 1f,
+                            SpecialType = SpecialTypes.None,
+                            IsExtraDamage = false
+                        }, 3);
+                    }
+                    else if (self.State.Name == "Parent?")
+                    {
+                        //  Disable vanilla damage
+                        self.State.DisableAction(5);
+                        self.State.DisableAction(8);
+                    }
+                    else if (self.State.Name == "G Parent?")
+                    {
+                        //  Disable vanilla damage
+                        self.State.DisableAction(6);
+                        self.State.DisableAction(8);
+                    }
                 }
             }
 
             orig(self);
         }
-
         private void GrimmchildAttackTimer(On.HutongGames.PlayMaker.Actions.SetFloatValue.orig_OnEnter orig, SetFloatValue self)
         {
             if (self.Fsm.GameObject.name == "Grimmchild(Clone)" && self.Fsm.Name == "Control" && (self.State.Name == "Pause" || self.State.Name == "Spawn"))
             {
-                self.floatValue.Value = (PlayerDataAccess.equippedCharm_1 ? LS.grimmchildGatheringSwarmAttackTimer : LS.grimmchildAttackTimer);
+                self.floatValue.Value = (PlayerDataAccess.equippedCharm_1 ? GS.grimmchildGatheringSwarmAttackTimer : GS.grimmchildAttackTimer);
             }
 
             orig(self);
@@ -1869,8 +1990,8 @@ namespace CharmReValance
         {
             if (self.Fsm.GameObject.name == "Grimmchild(Clone)" && self.Fsm.Name == "Control" && self.State.Name == "Antic")
             {
-                self.min.Value = (PlayerDataAccess.equippedCharm_1 ? LS.grimmchildGatheringSwarmAttackTimer : LS.grimmchildAttackTimer);
-                self.max.Value = (PlayerDataAccess.equippedCharm_1 ? LS.grimmchildGatheringSwarmAttackTimer : LS.grimmchildAttackTimer);
+                self.min.Value = (PlayerDataAccess.equippedCharm_1 ? GS.grimmchildGatheringSwarmAttackTimer : GS.grimmchildAttackTimer);
+                self.max.Value = (PlayerDataAccess.equippedCharm_1 ? GS.grimmchildGatheringSwarmAttackTimer : GS.grimmchildAttackTimer);
             }
 
             orig(self);
@@ -1880,8 +2001,8 @@ namespace CharmReValance
             //Log(self.Fsm.GameObject.name + self.Fsm.Name + self.State.Name);
             if (self.Fsm.GameObject.name == "Grimmchild(Clone)" && self.Fsm.Name == "Control" && self.State.Name == "Shoot")
             {
-                self.speed = LS.grimmchildProjectileSpeed;
-                self.spread = LS.grimmchildProjectileSpread;
+                self.speed = GS.grimmchildProjectileSpeed;
+                self.spread = GS.grimmchildProjectileSpread;
                 //Log("FireAtTarget speed: " + self.speed + " and spread: " + self.spread);
             }
 
@@ -1903,7 +2024,7 @@ namespace CharmReValance
         private void RemoveGrimmballTerrainCollision(On.PlayMakerFSM.orig_OnEnable orig, PlayMakerFSM self)
         {
             if (self.Fsm.GameObject.name == "Grimmball(Clone)" && self.Fsm.Name == "Control"
-                && LS.grimmchildBypassTerrain)
+                && GS.grimmchildBypassTerrain)
             {
                 self.Fsm.GameObject.RemoveComponent<UnityEngine.CircleCollider2D>();
                 //Log("attempting to disable impact collision detection");
@@ -1948,13 +2069,13 @@ namespace CharmReValance
         {
             if (name == "beamDamage")
             {
-                return (int)(PlayerDataAccess.nailDamage * LS.grubberflysElegyDamageScale);
+                return (int)(PlayerDataAccess.nailDamage * GS.grubberflysElegyDamageScale);
             }
             return orig;
         }
         private void GrubberflysElegyAllowJoniBeam(On.HeroController.orig_TakeDamage orig, HeroController self, GameObject go, CollisionSide damageSide, int damageAmount, int hazardType)
         {
-            int fullHealth = (PlayerData.instance.maxHealth + (PlayerDataAccess.equippedCharm_27 ? PlayerDataAccess.joniHealthBlue - LS.jonisBlessingLifeblood : 0));
+            int fullHealth = (PlayerData.instance.maxHealth + (PlayerDataAccess.equippedCharm_27 ? PlayerDataAccess.joniHealthBlue - GS.jonisBlessingLifeblood : 0));
 
             orig(self, go, damageSide, damageAmount, hazardType);
 
@@ -1964,11 +2085,11 @@ namespace CharmReValance
         {
             Vector2 originalVelocity = self.vector.Value;
             if (self.Fsm.GameObject.name.StartsWith("Grubberfly Beam") && self.Fsm.Name == "Control" && self.State.Name == "Init"
-                && LS.grubberflysElegyRangeAffected)
+                && GS.grubberflysElegyRangeAffected)
             {
                 //  Get square root of nail range to apply as modifier to beam velocity.
-                float velocityModifier = Mathf.Sqrt(((100 + (PlayerDataAccess.equippedCharm_18 ? LS.longnailRangeIncrease : 0) 
-                    + (PlayerDataAccess.equippedCharm_13 ? LS.markOfPrideRangeIncrease : 0)) / 100f));
+                float velocityModifier = Mathf.Sqrt(((100 + (PlayerDataAccess.equippedCharm_18 ? GS.longnailRangeIncrease : 0) 
+                    + (PlayerDataAccess.equippedCharm_13 ? GS.markOfPrideRangeIncrease : 0)) / 100f));
                 self.vector = Vector2.Scale(originalVelocity, new Vector2(velocityModifier, velocityModifier));
                 //Log("Beam velocity set to " + self.vector.Value.ToString());
             }
@@ -1985,11 +2106,11 @@ namespace CharmReValance
         {
             float originalTime = self.time.Value;
             if (self.Fsm.GameObject.name.StartsWith("Grubberfly Beam") && self.Fsm.Name == "Control" && self.State.Name.Contains("ctive")
-                && LS.grubberflysElegyRangeAffected)
+                && GS.grubberflysElegyRangeAffected)
             {
                 //  Get square root of nail range to apply as modifier to beam duration.
-                float durationModifier = Mathf.Sqrt(((100 + (PlayerDataAccess.equippedCharm_18 ? LS.longnailRangeIncrease : 0)
-                    + (PlayerDataAccess.equippedCharm_13 ? LS.markOfPrideRangeIncrease : 0)) / 100f));
+                float durationModifier = Mathf.Sqrt(((100 + (PlayerDataAccess.equippedCharm_18 ? GS.longnailRangeIncrease : 0)
+                    + (PlayerDataAccess.equippedCharm_13 ? GS.markOfPrideRangeIncrease : 0)) / 100f));
                 self.time = originalTime * durationModifier;
                 //Log("Beam duration set to " + self.time.Value);
             }
@@ -2005,8 +2126,8 @@ namespace CharmReValance
         {
             if (hitInstance.Source.name.StartsWith("Grubberfly Beam") && (PlayerDataAccess.equippedCharm_20 || PlayerDataAccess.equippedCharm_21))
             {
-                int soulGain = (PlayerDataAccess.equippedCharm_20 ? LS.grubberflysElegySoulCatcherSoulGain : 0)
-                    + (PlayerDataAccess.equippedCharm_21 ? LS.grubberflysElegySoulEaterSoulGain : 0);
+                int soulGain = (PlayerDataAccess.equippedCharm_20 ? GS.grubberflysElegySoulCatcherSoulGain : 0)
+                    + (PlayerDataAccess.equippedCharm_21 ? GS.grubberflysElegySoulEaterSoulGain : 0);
                 HeroController.instance.AddMPCharge(soulGain);
             }
 
@@ -2041,9 +2162,9 @@ namespace CharmReValance
         {
             if (PlayerDataAccess.equippedCharm_3)
             {
-                grubSoulGain = LS.grubsongSoulGain;
-                grubSoulGain += PlayerDataAccess.equippedCharm_35 ? LS.grubsongGrubberflysElegySoulGainIncrease : 0;
-                grubSoulGain += PlayerDataAccess.equippedCharm_28 ? LS.grubsongShapeOfUnnSoulGainIncrease : 0;
+                grubSoulGain = GS.grubsongSoulGain;
+                grubSoulGain += PlayerDataAccess.equippedCharm_35 ? GS.grubsongGrubberflysElegySoulGainIncrease : 0;
+                grubSoulGain += PlayerDataAccess.equippedCharm_28 ? GS.grubsongShapeOfUnnSoulGainIncrease : 0;
                 //Log("Grubsong soul gain set to " + grubSoulGain);
             }
         }
@@ -2068,10 +2189,10 @@ namespace CharmReValance
             if ((self.Fsm.Name == "Stun" || self.Fsm.Name == "Stun Control") && self.State.Name == "Heavy Blow")
             {
                 if (self.integer1.Name == "Stun Hit Max") {
-                    self.integer2.Value = LS.heavyBlowStagger;
+                    self.integer2.Value = GS.heavyBlowStagger;
                 }
                 else {
-                    self.integer2.Value = LS.heavyBlowStaggerCombo;
+                    self.integer2.Value = GS.heavyBlowStaggerCombo;
                 }
             }
 
@@ -2094,7 +2215,7 @@ namespace CharmReValance
                     || (self.Fsm.Name.StartsWith("breakable_wall") && self.State.Name.StartsWith("Hit "))
                     || (self.Fsm.GameObject.name.StartsWith("Hive Breakable ") && self.State.Name == "Damage"))
                 {
-                    self.integer2 = LS.heavyBlowEnviroHits;
+                    self.integer2 = GS.heavyBlowEnviroHits;
                     //Log("Heavy Blow damages environment faster.");
                 }
             }
@@ -2105,7 +2226,7 @@ namespace CharmReValance
         {
             if (PlayerDataAccess.equippedCharm_15 && self.Fsm.Name.StartsWith("break_floor") && self.State.Name == "Hit")
             {
-                if ((self.Fsm.GetFsmInt("Hits").Value + 1) * LS.heavyBlowEnviroHits >= 3)
+                if ((self.Fsm.GetFsmInt("Hits").Value + 1) * GS.heavyBlowEnviroHits >= 3)
                 {
                     Log("break_floor should be destroyed.");
                     if (self.Fsm.GetState("PlayerData") != null)
@@ -2126,8 +2247,8 @@ namespace CharmReValance
             {
                 mustReset = true;
                 normalSpawn = self.spawnMax.Value;
-                self.spawnMin = normalSpawn * Math.Min(LS.heavyBlowEnviroHits, self.Fsm.GetFsmInt("Hits").Value);
-                self.spawnMax = normalSpawn * Math.Min(LS.heavyBlowEnviroHits, self.Fsm.GetFsmInt("Hits").Value);
+                self.spawnMin = normalSpawn * Math.Min(GS.heavyBlowEnviroHits, self.Fsm.GetFsmInt("Hits").Value);
+                self.spawnMax = normalSpawn * Math.Min(GS.heavyBlowEnviroHits, self.Fsm.GetFsmInt("Hits").Value);
                 //Log("Geo rock dropped additional geo.");
             }
 
@@ -2150,19 +2271,19 @@ namespace CharmReValance
             {
                 if (PlayerDataAccess.equippedCharm_23 && !PlayerDataAccess.equippedCharm_27)
                 {
-                    hivebloodRegenLimit = LS.hivebloodRegenLimit + LS.hivebloodFragileHeartLimitIncrease;
+                    hivebloodRegenLimit = GS.hivebloodRegenLimit + GS.hivebloodFragileHeartLimitIncrease;
                     hivebloodLocalMaxHP = PlayerDataAccess.maxHealth;
                 }
                 else if (PlayerDataAccess.equippedCharm_27)
                 {
                     hivebloodJoniMasks.Clear();
 
-                    hivebloodRegenLimit = LS.hivebloodRegenLimit + (PlayerDataAccess.equippedCharm_8 ? LS.hivebloodLifebloodHeartLimitIncrease : 0);
+                    hivebloodRegenLimit = GS.hivebloodRegenLimit + (PlayerDataAccess.equippedCharm_8 ? GS.hivebloodLifebloodHeartLimitIncrease : 0);
                     hivebloodLocalMaxHP = PlayerDataAccess.maxHealth + PlayerDataAccess.joniHealthBlue;
                 }
                 else
                 {
-                    hivebloodRegenLimit = LS.hivebloodRegenLimit;
+                    hivebloodRegenLimit = GS.hivebloodRegenLimit;
                     hivebloodLocalMaxHP = PlayerDataAccess.maxHealth;
                 }
                 hivebloodRegenMore = false;
@@ -2179,13 +2300,13 @@ namespace CharmReValance
         {
             if (self.Fsm.GameObject.name == "Health" && self.Fsm.Name == "Hive Health Regen" && self.State.Name.StartsWith("Recover "))
             {
-                float regenCooldown = LS.hivebloodCooldown + (hivebloodRegenTimes * LS.hivebloodCooldownDecceleration);
+                float regenCooldown = GS.hivebloodCooldown + (hivebloodRegenTimes * GS.hivebloodCooldownDecceleration);
                 self.float2.Value = regenCooldown / 2f;
                 //if (self.State.Name == "Recover 1") Log("Hiveblood regen will take " + regenCooldown + " seconds.");
             }
             else if (self.Fsm.GameObject.name == "Blue Health Hive(Clone)" && self.Fsm.Name == "blue_health_display" && self.State.Name.StartsWith("Regen "))
             {
-                float regenCooldown = LS.hivebloodJonisCooldown + (hivebloodRegenTimes * LS.hivebloodJonisCooldownDecceleration);
+                float regenCooldown = GS.hivebloodJonisCooldown + (hivebloodRegenTimes * GS.hivebloodJonisCooldownDecceleration);
                 self.float2.Value = regenCooldown / 2f;
                 //if (self.State.Name == "Regen 1") Log("Hiveblood regen will take " + regenCooldown + " seconds.");
             }
@@ -2331,8 +2452,8 @@ namespace CharmReValance
             ILCursor cursor = new ILCursor(il).Goto(0);
             cursor.GotoNext(i => i.MatchLdcR4(1.4f));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(scale => 0.95f + ((float)(LS.jonisBlessingLifeblood 
-                + (PlayerDataAccess.equippedCharm_8 ? LS.lifebloodHeartLifeblood : 0)) / (float)(PlayerDataAccess.maxHealth)));
+            cursor.EmitDelegate<Func<float, float>>(scale => 0.95f + ((float)(GS.jonisBlessingLifeblood 
+                + (PlayerDataAccess.equippedCharm_8 ? GS.lifebloodHeartLifeblood : 0)) / (float)(PlayerDataAccess.maxHealth)));
             //  Joni's Lifeblood (plus Lifeblood Heart) divided by maxHealth to get correct %.
             //  Has to be added to 0.95f instead of 1f so Joni's rounds UP to the expected value.
             //  As a result, jonisHealthBlue in game will always be 1 less than the actual maxHealth including the Joni's masks.
@@ -2345,7 +2466,7 @@ namespace CharmReValance
         {
             if (self.Fsm.GameObject.name == "Charm Effects" && self.Fsm.Name == "White Charm" && self.State.Name == "Wait")
             {
-                self.time.Value = LS.kingsoulRegenTickRate;
+                self.time.Value = GS.kingsoulRegenTickRate;
             }
 
             orig(self);
@@ -2354,7 +2475,7 @@ namespace CharmReValance
         {
             if (self.Fsm.GameObject.name == "Charm Effects" && self.Fsm.Name == "White Charm" && self.State.Name == "Soul UP")
             {
-                self.functionCall.IntParameter.Value = LS.kingsoulSoulGain;
+                self.functionCall.IntParameter.Value = GS.kingsoulSoulGain;
             }
 
             orig(self);
@@ -2380,11 +2501,11 @@ namespace CharmReValance
 
             if (PlayerDataAccess.equippedCharm_9)
             {
-                baseLifeblood = LS.lifebloodCoreLifeblood 
-                    + (PlayerDataAccess.equippedCharm_8 && !(PlayerDataAccess.equippedCharm_27 && PlayerDataAccess.equippedCharm_29) ? LS.lifebloodHeartLifeblood : 0);
-                lifebloodCoreCost = (PlayerDataAccess.equippedCharm_14 ? LS.lifebloodCoreSteadyBodyCost : LS.lifebloodCoreCost);
-                lifebloodCoreCost = Math.Min(lifebloodCoreCost, (PlayerDataAccess.equippedCharm_33 ? LS.lifebloodCoreSpellTwisterCost : lifebloodCoreCost));
-                lifebloodCoreTimer = LS.lifebloodCoreCooldown;
+                baseLifeblood = GS.lifebloodCoreLifeblood 
+                    + (PlayerDataAccess.equippedCharm_8 && !(PlayerDataAccess.equippedCharm_27 && PlayerDataAccess.equippedCharm_29) ? GS.lifebloodHeartLifeblood : 0);
+                lifebloodCoreCost = (PlayerDataAccess.equippedCharm_14 ? GS.lifebloodCoreSteadyBodyCost : GS.lifebloodCoreCost);
+                lifebloodCoreCost = Math.Min(lifebloodCoreCost, (PlayerDataAccess.equippedCharm_33 ? GS.lifebloodCoreSpellTwisterCost : lifebloodCoreCost));
+                lifebloodCoreTimer = GS.lifebloodCoreCooldown;
                 lifebloodCoreMax = baseLifeblood;
             }
             else if (PlayerDataAccess.equippedCharm_29 && PlayerDataAccess.equippedCharm_27)
@@ -2399,7 +2520,7 @@ namespace CharmReValance
             }
             else if (PlayerDataAccess.equippedCharm_8)
             {
-                baseLifeblood = LS.lifebloodHeartLifeblood;
+                baseLifeblood = GS.lifebloodHeartLifeblood;
             }
 
             return baseLifeblood;
@@ -2417,12 +2538,12 @@ namespace CharmReValance
                     {
                         HeroController.instance.TakeMP(lifebloodCoreCost);
                         EventRegister.SendEvent("ADD BLUE HEALTH");
-                        lifebloodCoreTimer = LS.lifebloodCoreCooldown;
+                        lifebloodCoreTimer = GS.lifebloodCoreCooldown;
                         //Log("Lifeblood Core overhealed.");
                     }
                     else
                     {
-                        lifebloodCoreTimer = Math.Min(LS.lifebloodCoreCooldown, 2.4f);
+                        lifebloodCoreTimer = Math.Min(GS.lifebloodCoreCooldown, 2.4f);
                         //if (PlayerDataAccess.healthBlue >= lifebloodCoreMax)
                         //    Log("Lifeblood Core unable to heal; max overheal reached.");
                         //else if (PlayerDataAccess.MPCharge < lifebloodCoreCost)
@@ -2455,21 +2576,21 @@ namespace CharmReValance
             while (cursor.TryGotoNext(i => i.MatchLdcR4(1.4f)))
             {
                 cursor.GotoNext();
-                cursor.EmitDelegate<Func<float, float>>(scale => (float)(1f + ((LS.markOfPrideRangeIncrease + LS.longnailRangeIncrease) / 100f)));
+                cursor.EmitDelegate<Func<float, float>>(scale => (float)(1f + ((GS.markOfPrideRangeIncrease + GS.longnailRangeIncrease) / 100f)));
             }
 
             // Mark of Pride Scaling
             while (cursor.TryGotoNext(i => i.MatchLdcR4(1.25f)))
             {
                 cursor.GotoNext();
-                cursor.EmitDelegate<Func<float, float>>(scale => (float)(1f + (LS.markOfPrideRangeIncrease / 100f)));
+                cursor.EmitDelegate<Func<float, float>>(scale => (float)(1f + (GS.markOfPrideRangeIncrease / 100f)));
             }
 
             // Longnail Scaling
             while (cursor.TryGotoNext(i => i.MatchLdcR4(1.15f)))
             {
                 cursor.GotoNext();
-                cursor.EmitDelegate<Func<float, float>>(scale => (float)(1f + (LS.longnailRangeIncrease / 100f)));
+                cursor.EmitDelegate<Func<float, float>>(scale => (float)(1f + (GS.longnailRangeIncrease / 100f)));
             }
 
             //  Set Longnail to use mantis nail swing animation
@@ -2569,7 +2690,7 @@ namespace CharmReValance
         {
             if (self.Fsm.GameObject.name == "Charm Effects" && self.Fsm.Name == "Slash Size Modifiers" && self.gameObject.GameObject.Name == "Wall Slash" && self.State.Name.StartsWith("Equipped"))
             {
-                self.functionCall.BoolParameter.Value = LS.regularNailRangeAffectsWallSlash;
+                self.functionCall.BoolParameter.Value = GS.regularNailRangeAffectsWallSlash;
             }
 
             orig(self);
@@ -2583,19 +2704,19 @@ namespace CharmReValance
             ILCursor cursor = new ILCursor(il).Goto(0);
             cursor.TryGotoNext(i => i.MatchLdfld<HeroController>("NAIL_CHARGE_TIME_CHARM"));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(time => LS.nailmastersGloryChargeTime);
+            cursor.EmitDelegate<Func<float, float>>(time => GS.nailmastersGloryChargeTime);
 
             cursor.TryGotoNext(i => i.MatchLdfld<HeroController>("NAIL_CHARGE_TIME_DEFAULT"));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(time => LS.regularNailArtChargeTime);
+            cursor.EmitDelegate<Func<float, float>>(time => GS.regularNailArtChargeTime);
         }
         private void NailArtPiercingSoulGain(On.HealthManager.orig_TakeDamage orig, HealthManager self, HitInstance hitInstance)
         {
             if (hitInstance.AttackType == AttackTypes.Spell)
             {
-                int soulGain = LS.regularSoulGain
-                    + (PlayerDataAccess.equippedCharm_20 ? LS.soulCatcherSoulGain : 0)
-                    + (PlayerDataAccess.equippedCharm_21 ? LS.soulEaterSoulGain : 0);
+                int soulGain = GS.regularSoulGain
+                    + (PlayerDataAccess.equippedCharm_20 ? GS.soulCatcherSoulGain : 0)
+                    + (PlayerDataAccess.equippedCharm_21 ? GS.soulEaterSoulGain : 0);
                 if (hitInstance.Source.name == "Great Slash" || hitInstance.Source.name == "Dash Slash")
                 {
                     HeroController.instance.AddMPCharge(soulGain);
@@ -2636,13 +2757,13 @@ namespace CharmReValance
             {
                 if (self.State.ActiveActionIndex == 0)
                 {
-                    self.x.Value = LS.regularVSSizeScaleX;
-                    self.y.Value = LS.regularVSSizeScaleY;
+                    self.x.Value = GS.regularVSSizeScaleX;
+                    self.y.Value = GS.regularVSSizeScaleY;
                 }
                 else if (self.State.ActiveActionIndex == 6)
                 {
-                    self.x.Value = LS.shamanStoneVSSizeScaleX;
-                    self.y.Value = LS.shamanStoneVSSizeScaleY;
+                    self.x.Value = GS.shamanStoneVSSizeScaleX;
+                    self.y.Value = GS.shamanStoneVSSizeScaleY;
                 }
             }
 
@@ -2651,8 +2772,8 @@ namespace CharmReValance
             {
                 if (self.State.ActiveActionIndex == 0)
                 {
-                    self.x.Value = PlayerDataAccess.equippedCharm_19 ? 1.8f : LS.regularSSSizeScaleX * 1.8f;
-                    self.y.Value = PlayerDataAccess.equippedCharm_19 ? 1.8f : LS.regularSSSizeScaleY * 1.8f;
+                    self.x.Value = PlayerDataAccess.equippedCharm_19 ? 1.8f : GS.regularSSSizeScaleX * 1.8f;
+                    self.y.Value = PlayerDataAccess.equippedCharm_19 ? 1.8f : GS.regularSSSizeScaleY * 1.8f;
                 }
             }
 
@@ -2664,11 +2785,11 @@ namespace CharmReValance
             {
                 if (self.floatVariable.Name == "X Scale")
                 {
-                    self.multiplyBy.Value = LS.shamanStoneSSSizeScaleX;
+                    self.multiplyBy.Value = GS.shamanStoneSSSizeScaleX;
                 }
                 else if (self.floatVariable.Name == "Y Scale")
                 {
-                    self.multiplyBy.Value = LS.shamanStoneSSSizeScaleY;
+                    self.multiplyBy.Value = GS.shamanStoneSSSizeScaleY;
                 }
             }
 
@@ -2680,22 +2801,22 @@ namespace CharmReValance
             {
                 if (self.State.ActiveActionIndex == 2)
                 {
-                    self.setValue.Value = LS.regularVSDamage + (furyActive ? LS.furyOfTheFallenVSDamageIncrease : 0);
+                    self.setValue.Value = GS.regularVSDamage + (furyActive ? GS.furyOfTheFallenVSDamageIncrease : 0);
                 }
                 else if (self.State.ActiveActionIndex == 4)
                 {
-                    self.setValue.Value = LS.shamanStoneVSDamage + (furyActive ? LS.furyOfTheFallenVSDamageIncrease : 0);
+                    self.setValue.Value = GS.shamanStoneVSDamage + (furyActive ? GS.furyOfTheFallenVSDamageIncrease : 0);
                 }
             }
             else if (self.Fsm.GameObject.name == "Fireball2 Spiral(Clone)" && self.Fsm.Name == "Fireball Control" && self.State.Name == "Set Damage")
             {
                 if (self.State.ActiveActionIndex == 3)
                 {
-                    self.setValue.Value = LS.regularSSDamage + (furyActive ? LS.furyOfTheFallenSSDamageIncrease : 0);
+                    self.setValue.Value = GS.regularSSDamage + (furyActive ? GS.furyOfTheFallenSSDamageIncrease : 0);
                 }
                 else if (self.State.ActiveActionIndex == 5)
                 {
-                    self.setValue.Value = LS.shamanStoneSSDamage + (furyActive ? LS.furyOfTheFallenSSDamageIncrease : 0);
+                    self.setValue.Value = GS.shamanStoneSSDamage + (furyActive ? GS.furyOfTheFallenSSDamageIncrease : 0);
                 }
             }
             else if (self.Fsm.Name == "Set Damage" && self.State.Name == "Set Damage")
@@ -2704,33 +2825,33 @@ namespace CharmReValance
                 {
                     if (self.State.ActiveActionIndex == 0)
                     {
-                        self.setValue.Value = LS.regularHWDamage + (furyActive ? LS.furyOfTheFallenHWDamageIncrease : 0);
+                        self.setValue.Value = GS.regularHWDamage + (furyActive ? GS.furyOfTheFallenHWDamageIncrease : 0);
                     }
                     else if (self.State.ActiveActionIndex == 2)
                     {
-                        self.setValue.Value = LS.shamanStoneHWDamage + (furyActive ? LS.furyOfTheFallenHWDamageIncrease : 0);
+                        self.setValue.Value = GS.shamanStoneHWDamage + (furyActive ? GS.furyOfTheFallenHWDamageIncrease : 0);
                     }
                 }
                 else if (self.Fsm.GameObject.transform.parent.gameObject.name == "Scr Heads 2")
                 {
                     if (self.State.ActiveActionIndex == 0)
                     {
-                        self.setValue.Value = LS.regularASDamage + (furyActive ? LS.furyOfTheFallenASDamageIncrease : 0);
+                        self.setValue.Value = GS.regularASDamage + (furyActive ? GS.furyOfTheFallenASDamageIncrease : 0);
                     }
                     else if (self.State.ActiveActionIndex == 2)
                     {
-                        self.setValue.Value = LS.shamanStoneASDamage + (furyActive ? LS.furyOfTheFallenASDamageIncrease : 0);
+                        self.setValue.Value = GS.shamanStoneASDamage + (furyActive ? GS.furyOfTheFallenASDamageIncrease : 0);
                     }
                 }
                 else if (self.Fsm.GameObject.transform.parent.gameObject.name == "Q Slam")
                 {
                     if (self.State.ActiveActionIndex == 0)
                     {
-                        self.setValue.Value = LS.regularDDiveDamage + (furyActive ? LS.furyOfTheFallenDDiveDamageIncrease : 0);
+                        self.setValue.Value = GS.regularDDiveDamage + (furyActive ? GS.furyOfTheFallenDDiveDamageIncrease : 0);
                     }
                     else if (self.State.ActiveActionIndex == 2)
                     {
-                        self.setValue.Value = LS.shamanStoneDDiveDamage + (furyActive ? LS.furyOfTheFallenDDiveDamageIncrease : 0);
+                        self.setValue.Value = GS.shamanStoneDDiveDamage + (furyActive ? GS.furyOfTheFallenDDiveDamageIncrease : 0);
                     }
                 }
                 else if (self.Fsm.GameObject.transform.parent.gameObject.name == "Q Slam 2")
@@ -2739,22 +2860,22 @@ namespace CharmReValance
                     {
                         if (self.State.ActiveActionIndex == 0)
                         {
-                            self.setValue.Value = LS.regularDDarkDamageL + (furyActive ? LS.furyOfTheFallenDDarkDamage1Increase : 0);
+                            self.setValue.Value = GS.regularDDarkDamageL + (furyActive ? GS.furyOfTheFallenDDarkDamage1Increase : 0);
                         }
                         else if (self.State.ActiveActionIndex == 2)
                         {
-                            self.setValue.Value = LS.shamanStoneDDarkDamageL + (furyActive ? LS.furyOfTheFallenDDarkDamage1Increase : 0);
+                            self.setValue.Value = GS.shamanStoneDDarkDamageL + (furyActive ? GS.furyOfTheFallenDDarkDamage1Increase : 0);
                         }
                     }
                     else if (self.Fsm.GameObject.name == "Hit R")
                     {
                         if (self.State.ActiveActionIndex == 0)
                         {
-                            self.setValue.Value = LS.regularDDarkDamageR + (furyActive ? LS.furyOfTheFallenDDarkDamage1Increase : 0);
+                            self.setValue.Value = GS.regularDDarkDamageR + (furyActive ? GS.furyOfTheFallenDDarkDamage1Increase : 0);
                         }
                         else if (self.State.ActiveActionIndex == 2)
                         {
-                            self.setValue.Value = LS.shamanStoneDDarkDamageR + (furyActive ? LS.furyOfTheFallenDDarkDamage1Increase : 0);
+                            self.setValue.Value = GS.shamanStoneDDarkDamageR + (furyActive ? GS.furyOfTheFallenDDarkDamage1Increase : 0);
                         }
                     }
                 }
@@ -2762,11 +2883,11 @@ namespace CharmReValance
                 {
                     if (self.State.ActiveActionIndex == 0)
                     {
-                        self.setValue.Value = LS.regularDiveDamage + (furyActive ? LS.furyOfTheFallenDiveDamageIncrease : 0);
+                        self.setValue.Value = GS.regularDiveDamage + (furyActive ? GS.furyOfTheFallenDiveDamageIncrease : 0);
                     }
                     else if (self.State.ActiveActionIndex == 2)
                     {
-                        self.setValue.Value = LS.shamanStoneDiveDamage + (furyActive ? LS.furyOfTheFallenDiveDamageIncrease : 0);
+                        self.setValue.Value = GS.shamanStoneDiveDamage + (furyActive ? GS.furyOfTheFallenDiveDamageIncrease : 0);
                     }
                 }
             }
@@ -2777,7 +2898,7 @@ namespace CharmReValance
         {
             if (self.Fsm.GameObject.name == "Q Mega" && self.Fsm.Name == "Hit Box Control" && self.State.Name == "Check Scale")
             {
-                int ddarkSecondWaveDamage = (PlayerDataAccess.equippedCharm_19 ? LS.shamanStoneDDarkDamageMega : LS.regularDDarkDamageMega) + (furyActive ? LS.furyOfTheFallenDDarkDamage2Increase : 0);
+                int ddarkSecondWaveDamage = (PlayerDataAccess.equippedCharm_19 ? GS.shamanStoneDDarkDamageMega : GS.regularDDarkDamageMega) + (furyActive ? GS.furyOfTheFallenDDarkDamage2Increase : 0);
                 self.Fsm.GameObject.transform.Find("Hit L").gameObject.LocateMyFSM("damages_enemy").GetFsmIntVariable("damageDealt").Value = ddarkSecondWaveDamage;
                 self.Fsm.GameObject.transform.Find("Hit R").gameObject.LocateMyFSM("damages_enemy").GetFsmIntVariable("damageDealt").Value = ddarkSecondWaveDamage;
             }
@@ -2796,19 +2917,19 @@ namespace CharmReValance
                 {
                     if (self.State.ActiveActionIndex == 3)
                     {
-                        self.floatValue.Value = -LS.shapeOfUnnSpeed;
+                        self.floatValue.Value = -GS.shapeOfUnnSpeed;
                     }
                     else if (self.State.ActiveActionIndex == 4)
                     {
-                        self.floatValue.Value = LS.shapeOfUnnSpeed;
+                        self.floatValue.Value = GS.shapeOfUnnSpeed;
                     }
                     else if (self.State.ActiveActionIndex == 6)
                     {
-                        self.floatValue.Value = -LS.shapeOfUnnQuickFocusSpeed;
+                        self.floatValue.Value = -GS.shapeOfUnnQuickFocusSpeed;
                     }
                     else if (self.State.ActiveActionIndex == 7)
                     {
-                        self.floatValue.Value = LS.shapeOfUnnQuickFocusSpeed;
+                        self.floatValue.Value = GS.shapeOfUnnQuickFocusSpeed;
                     }
                 }
             }
@@ -2845,7 +2966,8 @@ namespace CharmReValance
                     PlayerDataAccess.MPReserveMax = 132;
                 }
 
-                var vessel = GameCameras.instance.hudCanvas.transform.FindChild("Soul Orb").FindChild("Vessels").FindChild("Vessel 1").GetComponent<PlayMakerFSM>();
+                var soulOrb = GameCameras.instance.hudCanvas.FindGameObjectInChildren("Soul Orb").FindGameObjectInChildren("Vessels");
+                var vessel = soulOrb.FindGameObjectInChildren("Vessel 1").GetComponent<PlayMakerFSM>();
                 if (PlayerDataAccess.MPReserveMax <= 0)
                 {
                     vessel.SendEvent("UNBIND VESSEL ORB");
@@ -2853,19 +2975,19 @@ namespace CharmReValance
                 }
                 if (PlayerDataAccess.MPReserveMax <= 33)
                 {
-                    vessel = GameCameras.instance.hudCanvas.transform.FindChild("Soul Orb").FindChild("Vessels").FindChild("Vessel 2").GetComponent<PlayMakerFSM>();
+                    vessel = soulOrb.FindGameObjectInChildren("Vessel 2").GetComponent<PlayMakerFSM>();
                     vessel.SendEvent("UNBIND VESSEL ORB");
                     //Log("Hide vessel 2.");
                 }
                 if (PlayerDataAccess.MPReserveMax <= 66)
                 {
-                    vessel = GameCameras.instance.hudCanvas.transform.FindChild("Soul Orb").FindChild("Vessels").FindChild("Vessel 3").GetComponent<PlayMakerFSM>();
+                    vessel = soulOrb.FindGameObjectInChildren("Vessel 3").GetComponent<PlayMakerFSM>();
                     vessel.SendEvent("UNBIND VESSEL ORB");
                     //Log("Hide vessel 3.");
                 }
                 if (PlayerDataAccess.MPReserveMax <= 99)
                 {
-                    vessel = GameCameras.instance.hudCanvas.transform.FindChild("Soul Orb").FindChild("Vessels").FindChild("Vessel 4").GetComponent<PlayMakerFSM>();
+                    vessel = soulOrb.FindGameObjectInChildren("Vessel 4").GetComponent<PlayMakerFSM>();
                     vessel.SendEvent("UNBIND VESSEL ORB");
                     //Log("Hide vessel 4.");
                 }
@@ -2884,7 +3006,7 @@ namespace CharmReValance
             orig(self);
 
             if (self.gameObject.name == "Sharp Shadow" && self.FsmName == "damages_enemy"
-                && LS.sharpShadowHurtBoxSize)
+                && GS.sharpShadowHurtBoxSize)
             {
                 self.gameObject.GetComponent<UnityEngine.BoxCollider2D>().size = new Vector2(3f, 2.5f);
                 //Log("Sharp Shadow hurt box size set.");
@@ -2895,7 +3017,7 @@ namespace CharmReValance
             if (self.Fsm.GameObject.name == "Sharp Shadow" && self.Fsm.Name == "damages_enemy")
             {
                 int nailDamage = PlayerDataAccess.nailDamage;
-                float dmgMult = PlayerDataAccess.equippedCharm_31 ? LS.sharpShadowDashmasterDamage : LS.sharpShadowDamage;
+                float dmgMult = PlayerDataAccess.equippedCharm_31 ? GS.sharpShadowDashmasterDamage : GS.sharpShadowDamage;
                 self.DamageDealt = (int)Math.Round(nailDamage * dmgMult, MidpointRounding.AwayFromZero);
             }
 
@@ -2916,14 +3038,14 @@ namespace CharmReValance
             ILCursor cursor = new ILCursor(il).Goto(0);
             cursor.TryGotoNext(i => i.MatchLdfld<HeroController>("DASH_SPEED_SHARP"));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(Speed => (PlayerDataAccess.equippedCharm_37 ? LS.sharpShadowSprintmasterDashSpeed : LS.sharpShadowDashSpeed));
+            cursor.EmitDelegate<Func<float, float>>(Speed => (PlayerDataAccess.equippedCharm_37 ? GS.sharpShadowSprintmasterDashSpeed : GS.sharpShadowDashSpeed));
         }
         private void SharpShadowSoulGain(On.HealthManager.orig_TakeDamage orig, HealthManager self, HitInstance hitInstance)
         {
             if (hitInstance.Source.name == "Shadow Dash" && (PlayerDataAccess.equippedCharm_20 || PlayerDataAccess.equippedCharm_21))
             {
-                int soulGain = (PlayerDataAccess.equippedCharm_20 ? LS.sharpShadowSoulCatcherSoulGain : 0)
-                    + (PlayerDataAccess.equippedCharm_21 ? LS.sharpShadowSoulEaterSoulGain : 0);
+                int soulGain = (PlayerDataAccess.equippedCharm_20 ? GS.sharpShadowSoulCatcherSoulGain : 0)
+                    + (PlayerDataAccess.equippedCharm_21 ? GS.sharpShadowSoulEaterSoulGain : 0);
                 HeroController.instance.AddMPCharge(soulGain);
             }
 
@@ -2932,9 +3054,9 @@ namespace CharmReValance
         // Sharp Shadow + Stalwart Shell i-frames
         private void SharpShadowStalwartIFrames(On.HeroController.orig_CancelDash orig, HeroController self)
         {
-            if (LS.sharpShadowStalwartShellIFrames > 0f && self.cState.shadowDashing && PlayerDataAccess.equippedCharm_16 && PlayerDataAccess.equippedCharm_4)
+            if (GS.sharpShadowStalwartShellIFrames > 0f && self.cState.shadowDashing && PlayerDataAccess.equippedCharm_16 && PlayerDataAccess.equippedCharm_4)
             {
-                HeroController.instance.StartCoroutine("Invulnerable", LS.sharpShadowStalwartShellIFrames);
+                HeroController.instance.StartCoroutine("Invulnerable", GS.sharpShadowStalwartShellIFrames);
             }
 
             orig(self);
@@ -2949,7 +3071,7 @@ namespace CharmReValance
             );
             cursor.GotoNext();
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(Volume => LS.sharpShadowVolume);
+            cursor.EmitDelegate<Func<float, float>>(Volume => GS.sharpShadowVolume);
         }
         #endregion
 
@@ -2962,32 +3084,32 @@ namespace CharmReValance
             // Regular
             cursor.TryGotoNext(i => i.MatchLdcI4(11));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(soul => LS.regularSoulGain);
+            cursor.EmitDelegate<Func<int, int>>(soul => GS.regularSoulGain);
 
             // Soul Catcher
             cursor.TryGotoNext(i => i.MatchLdcI4(3));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(soul => LS.soulCatcherSoulGain);
+            cursor.EmitDelegate<Func<int, int>>(soul => GS.soulCatcherSoulGain);
 
             // Soul Eater
             cursor.TryGotoNext(i => i.MatchLdcI4(8));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(soul => LS.soulEaterSoulGain);
+            cursor.EmitDelegate<Func<int, int>>(soul => GS.soulEaterSoulGain);
 
             // Regular Reserves
             cursor.TryGotoNext(i => i.MatchLdcI4(6));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(soul => LS.regularReserveSoulGain);
+            cursor.EmitDelegate<Func<int, int>>(soul => GS.regularReserveSoulGain);
 
             // Soul Catcher Reserves
             cursor.TryGotoNext(i => i.MatchLdcI4(2));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(soul => LS.soulCatcherReserveSoulGain);
+            cursor.EmitDelegate<Func<int, int>>(soul => GS.soulCatcherReserveSoulGain);
 
             // Soul Eater Reserves
             cursor.TryGotoNext(i => i.MatchLdcI4(6));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<int, int>>(soul => LS.soulEaterReserveSoulGain);
+            cursor.EmitDelegate<Func<int, int>>(soul => GS.soulEaterReserveSoulGain);
         }
         #endregion
 
@@ -2997,7 +3119,7 @@ namespace CharmReValance
         {
             if (self.Fsm.GameObject.name == "Knight" && self.Fsm.Name == "Spell Control" && self.State.Name.StartsWith("Can Cast?"))
             {
-                self.integer2.Value = (PlayerDataAccess.equippedCharm_33 ? (PlayerDataAccess.equippedCharm_28 ? LS.spellTwisterShapeOfUnnSpellCost : LS.spellTwisterSpellCost) : LS.regularSpellCost);
+                self.integer2.Value = (PlayerDataAccess.equippedCharm_33 ? (PlayerDataAccess.equippedCharm_28 ? GS.spellTwisterShapeOfUnnSpellCost : GS.spellTwisterSpellCost) : GS.regularSpellCost);
             }
 
             orig(self);
@@ -3014,15 +3136,15 @@ namespace CharmReValance
                 float upgradeRate = (PlayerDataAccess.MPReserveMax + (11 * PlayerDataAccess.vesselFragments)) / 132f;
 
                 // Duration
-                float duration = LS.sporeShroomCloudDurationBase + ((LS.sporeShroomCloudDurationMax - LS.sporeShroomCloudDurationBase) * upgradeRate);
-                self.time.Value = duration * (PlayerDataAccess.equippedCharm_34 ? LS.sporeShroomDeepFocusDurationMult : 1f);
+                float duration = GS.sporeShroomCloudDurationBase + ((GS.sporeShroomCloudDurationMax - GS.sporeShroomCloudDurationBase) * upgradeRate);
+                self.time.Value = duration * (PlayerDataAccess.equippedCharm_34 ? GS.sporeShroomDeepFocusDurationMult : 1f);
                 //Log("Spore cloud duration: " + duration);
 
                 // Damage Rate
-                float damage = LS.sporeShroomDamageBase + ((LS.sporeShroomDamageMax - LS.sporeShroomDamageBase) * upgradeRate);
+                float damage = GS.sporeShroomDamageBase + ((GS.sporeShroomDamageMax - GS.sporeShroomDamageBase) * upgradeRate);
                 if (PlayerDataAccess.equippedCharm_10)
-                    damage = LS.sporeShroomDefendersCrestDamageBase + ((LS.sporeShroomDefendersCrestDamageMax - LS.sporeShroomDefendersCrestDamageBase) * upgradeRate);
-                self.Fsm.GameObject.GetComponent<DamageEffectTicker>().damageInterval = duration / (damage + 0.5f); //  +0.5f ensures time works out
+                    damage = GS.sporeShroomDefendersCrestDamageBase + ((GS.sporeShroomDefendersCrestDamageMax - GS.sporeShroomDefendersCrestDamageBase) * upgradeRate);
+                self.Fsm.GameObject.GetComponent<DamageEffectTicker>().damageInterval = GetTickRate(damage, duration);
                 //Log("Spore cloud damage: " + damage);
             }
 
@@ -3032,15 +3154,15 @@ namespace CharmReValance
                 float upgradeRate = (PlayerDataAccess.MPReserveMax + (11 * PlayerDataAccess.vesselFragments)) / 132f;
 
                 // Duration
-                float duration = LS.sporeShroomCloudDurationBase + ((LS.sporeShroomCloudDurationMax - LS.sporeShroomCloudDurationBase) * upgradeRate);
-                self.time.Value = duration * (PlayerDataAccess.equippedCharm_34 ? LS.sporeShroomDeepFocusDurationMult : 1f);
+                float duration = GS.sporeShroomCloudDurationBase + ((GS.sporeShroomCloudDurationMax - GS.sporeShroomCloudDurationBase) * upgradeRate);
+                self.time.Value = duration * (PlayerDataAccess.equippedCharm_34 ? GS.sporeShroomDeepFocusDurationMult : 1f);
                 //Log("Spore cloud duration: " + duration);
 
                 // Damage Rate
-                float damage = LS.sporeShroomDamageBase + ((LS.sporeShroomDamageMax - LS.sporeShroomDamageBase) * upgradeRate);
+                float damage = GS.sporeShroomDamageBase + ((GS.sporeShroomDamageMax - GS.sporeShroomDamageBase) * upgradeRate);
                 if (PlayerDataAccess.equippedCharm_10)
-                    damage = LS.sporeShroomDefendersCrestDamageBase + ((LS.sporeShroomDefendersCrestDamageMax - LS.sporeShroomDefendersCrestDamageBase) * upgradeRate);
-                self.Fsm.GameObject.GetComponent<DamageEffectTicker>().damageInterval = duration / (damage + 0.5f); //  +0.5f ensures time works out
+                    damage = GS.sporeShroomDefendersCrestDamageBase + ((GS.sporeShroomDefendersCrestDamageMax - GS.sporeShroomDefendersCrestDamageBase) * upgradeRate);
+                self.Fsm.GameObject.GetComponent<DamageEffectTicker>().damageInterval = GetTickRate(damage, duration);
                 //Log("Spore cloud damage: " + damage);
 
                 var damageTicker = self.Fsm.GameObject.GetComponent<DamageEffectTicker>();
@@ -3051,7 +3173,7 @@ namespace CharmReValance
             // Spore Shroom Cooldown
             else if (self.Fsm.GameObject.name == "Knight" && self.Fsm.Name == "Spore Cooldown" && self.State.Name == "Cooldown")
             {
-                self.time.Value = LS.sporeShroomCooldown;
+                self.time.Value = GS.sporeShroomCooldown;
             }
 
             orig(self);
@@ -3065,9 +3187,9 @@ namespace CharmReValance
                 float upgradeRate = (PlayerDataAccess.MPReserveMax + (11 * PlayerDataAccess.vesselFragments)) / 132f;
 
                 // Radius
-                float radius = LS.sporeShroomRadiusBase + ((LS.sporeShroomRadiusMax - LS.sporeShroomRadiusBase) * upgradeRate);
+                float radius = GS.sporeShroomRadiusBase + ((GS.sporeShroomRadiusMax - GS.sporeShroomRadiusBase) * upgradeRate);
                 if (PlayerDataAccess.equippedCharm_34)
-                    radius *= LS.sporeShroomDeepFocusRadiusMult;
+                    radius *= GS.sporeShroomDeepFocusRadiusMult;
                 //Log("Spore cloud radius: " + radius);
 
                 if (self.State.Name == "Normal")
@@ -3095,24 +3217,26 @@ namespace CharmReValance
                 float upgradeRate = (PlayerDataAccess.MPReserveMax + (11 * PlayerDataAccess.vesselFragments)) / 132f;
 
                 // Duration
-                float duration = LS.sporeShroomCloudDurationBase + ((LS.sporeShroomCloudDurationMax - LS.sporeShroomCloudDurationBase) * upgradeRate);
+                float duration = GS.sporeShroomCloudDurationBase + ((GS.sporeShroomCloudDurationMax - GS.sporeShroomCloudDurationBase) * upgradeRate);
                 if (PlayerDataAccess.equippedCharm_34)
-                    duration *= LS.sporeShroomDeepFocusDurationMult;
+                    duration *= GS.sporeShroomDeepFocusDurationMult;
 
                 // Radius
-                float radius = LS.sporeShroomRadiusBase + ((LS.sporeShroomRadiusMax - LS.sporeShroomRadiusBase) * upgradeRate);
+                float radius = GS.sporeShroomRadiusBase + ((GS.sporeShroomRadiusMax - GS.sporeShroomRadiusBase) * upgradeRate);
                 if (PlayerDataAccess.equippedCharm_34)
-                    radius *= LS.sporeShroomDeepFocusRadiusMult;
+                    radius *= GS.sporeShroomDeepFocusRadiusMult;
 
                 if (self.State.Name == "Normal")
                 {
-                    self.Fsm.GameObject.transform.Find("Pt Normal").gameObject.GetComponent<ParticleSystem>().startLifetime = duration;
-                    self.Fsm.GameObject.transform.Find("Pt Normal").gameObject.GetComponent<ParticleSystem>().startSpeed = 40 * radius;
+                    ParticleSystem pt = self.Fsm.GameObject.transform.Find("Pt Normal").gameObject.GetComponent<ParticleSystem>();
+                    pt.startLifetime = duration;
+                    pt.startSpeed = 40 * radius;
                 }
                 else if (self.State.Name == "Deep")
                 {
-                    self.Fsm.GameObject.transform.Find("Pt Deep").gameObject.GetComponent<ParticleSystem>().startLifetime = duration;
-                    self.Fsm.GameObject.transform.Find("Pt Deep").gameObject.GetComponent<ParticleSystem>().startSpeed = 40 * radius;
+                    ParticleSystem pt = self.Fsm.GameObject.transform.Find("Pt Deep").gameObject.GetComponent<ParticleSystem>();
+                    pt.startLifetime = duration;
+                    pt.startSpeed = 40 * radius;
                 }
             }
         }
@@ -3129,7 +3253,7 @@ namespace CharmReValance
         {
             if (self.Fsm.GameObject.name == "Knight" && self.Fsm.Name == "Spell Control" && self.State.Name == "Cancel All" && self.boolVariable.Name == "Spore Cooldown")
             {
-                self.boolValue.Value = self.boolVariable.Value && !LS.sporeShroomDamageResetsCooldown;
+                self.boolValue.Value = self.boolVariable.Value && !GS.sporeShroomDamageResetsCooldown;
             }
 
             orig(self);
@@ -3143,19 +3267,19 @@ namespace CharmReValance
             ILCursor cursor = new ILCursor(il).Goto(0);
             cursor.TryGotoNext(i => i.MatchLdfld<HeroController>("WALK_SPEED"));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(speed => LS.regularWalkSpeed);
+            cursor.EmitDelegate<Func<float, float>>(speed => GS.regularWalkSpeed);
 
             cursor.TryGotoNext(i => i.MatchLdfld<HeroController>("RUN_SPEED_CH_COMBO"));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(speed => LS.sprintmasterDashmasterSpeed);
+            cursor.EmitDelegate<Func<float, float>>(speed => GS.sprintmasterDashmasterSpeed);
 
             cursor.TryGotoNext(i => i.MatchLdfld<HeroController>("RUN_SPEED_CH"));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(speed => LS.sprintmasterSpeed);
+            cursor.EmitDelegate<Func<float, float>>(speed => GS.sprintmasterSpeed);
 
             cursor.TryGotoNext(i => i.MatchLdfld<HeroController>("RUN_SPEED"));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(speed => (PlayerDataAccess.equippedCharm_37 ? (PlayerDataAccess.equippedCharm_31 ? LS.sprintmasterDashmasterSpeed : LS.sprintmasterSpeed) : LS.regularSpeed));
+            cursor.EmitDelegate<Func<float, float>>(speed => (PlayerDataAccess.equippedCharm_37 ? (PlayerDataAccess.equippedCharm_31 ? GS.sprintmasterDashmasterSpeed : GS.sprintmasterSpeed) : GS.regularSpeed));
         }
         #endregion
 
@@ -3166,18 +3290,18 @@ namespace CharmReValance
             ILCursor cursor = new ILCursor(il).Goto(0);
             cursor.TryGotoNext(i => i.MatchLdfld<HeroController>("INVUL_TIME_STAL"));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(time => baldurShellBlocked ? LS.stalwartShellBaldurBlockIFrames : LS.stalwartShellIFrames);
+            cursor.EmitDelegate<Func<float, float>>(time => baldurShellBlocked ? GS.stalwartShellBaldurBlockIFrames : GS.stalwartShellIFrames);
 
             cursor.TryGotoNext(i => i.MatchLdfld<HeroController>("INVUL_TIME"));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(time => LS.regularIFrames);
+            cursor.EmitDelegate<Func<float, float>>(time => GS.regularIFrames);
         }
         private void SetParryIFrames(On.HeroController.orig_CharmUpdate orig, HeroController self)
         {
             orig(self);
 
-            HeroController.instance.INVUL_TIME_PARRY = (PlayerDataAccess.equippedCharm_4 ? LS.stalwartShellParryIFrames : LS.regularParryIFrames);
-            HeroController.instance.INVUL_TIME_CYCLONE = (PlayerDataAccess.equippedCharm_4 ? LS.stalwartShellParryIFrames : LS.regularParryIFrames);
+            HeroController.instance.INVUL_TIME_PARRY = (PlayerDataAccess.equippedCharm_4 ? GS.stalwartShellParryIFrames : GS.regularParryIFrames);
+            HeroController.instance.INVUL_TIME_CYCLONE = (PlayerDataAccess.equippedCharm_4 ? GS.stalwartShellParryIFrames : GS.regularParryIFrames);
         }
         private void StalwartShellRegenTimer()
         {
@@ -3187,7 +3311,7 @@ namespace CharmReValance
 
                 if (stalwartShellTimer < 0f)
                 {
-                    if (PlayerDataAccess.healthBlue < LS.stalwartShellLifeblood)
+                    if (PlayerDataAccess.healthBlue < GS.stalwartShellLifeblood)
                     {
                         EventRegister.SendEvent("ADD BLUE HEALTH");
                         //Log("Stalwart Shell overhealed.");
@@ -3203,9 +3327,9 @@ namespace CharmReValance
             if (PlayerDataAccess.equippedCharm_4 && !PlayerDataAccess.equippedCharm_27 && !PlayerDataAccess.equippedCharm_9)
             {
                 stalwartShellRegen = true;
-                stalwartShellTimer = LS.stalwartShellCooldown
-                    - (PlayerDataAccess.equippedCharm_8 ? LS.stalwartShellLifebloodHeartCooldownReduction : 0)
-                    - (PlayerDataAccess.equippedCharm_10 ? LS.stalwartShellDefendersCrestCooldownReduction : 0);
+                stalwartShellTimer = GS.stalwartShellCooldown
+                    - (PlayerDataAccess.equippedCharm_8 ? GS.stalwartShellLifebloodHeartCooldownReduction : 0)
+                    - (PlayerDataAccess.equippedCharm_10 ? GS.stalwartShellDefendersCrestCooldownReduction : 0);
                 //Log("Stalwart Shell timer reset to " + stalwartShellTimer);
             }
             else
@@ -3218,7 +3342,7 @@ namespace CharmReValance
         }
         private void StalwartShellJonisDamageReduction(On.PlayerData.orig_TakeHealth orig, PlayerData self, int amount)
         {
-            if (LS.stalwartShellJonisDamageReduction && PlayerDataAccess.equippedCharm_4 && PlayerDataAccess.equippedCharm_27 && amount > 1)
+            if (GS.stalwartShellJonisDamageReduction && PlayerDataAccess.equippedCharm_4 && PlayerDataAccess.equippedCharm_27 && amount > 1)
             {
                 //Log("PlayerData.TakeHealth(amount " + amount + ")");
                 amount -= 1;
@@ -3235,9 +3359,9 @@ namespace CharmReValance
         private void SteadyBodyFocusCost(PlayerData data, HeroController controller)
         {
             if (PlayerDataAccess.equippedCharm_14) {
-                PlayerData.instance.focusMP_amount = PlayerDataAccess.equippedCharm_28 ? LS.steadyBodyShapeOfUnnFocusCost : LS.steadyBodyFocusCost;
+                PlayerData.instance.focusMP_amount = PlayerDataAccess.equippedCharm_28 ? GS.steadyBodyShapeOfUnnFocusCost : GS.steadyBodyFocusCost;
             }
-            else { PlayerData.instance.focusMP_amount = LS.regularFocusCost; }
+            else { PlayerData.instance.focusMP_amount = GS.regularFocusCost; }
         }
         //  Reduce damage knockback
         private void SetDamageKnockback(ILContext il)
@@ -3245,16 +3369,16 @@ namespace CharmReValance
             ILCursor cursor = new ILCursor(il).Goto(0);
             cursor.TryGotoNext(i => i.MatchLdfld<HeroController>("RECOIL_DURATION"));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(time => (PlayerDataAccess.equippedCharm_14 ? LS.steadyBodyKnockback : LS.regularDamageKnockback));
+            cursor.EmitDelegate<Func<float, float>>(time => (PlayerDataAccess.equippedCharm_14 ? GS.steadyBodyKnockback : GS.regularDamageKnockback));
 
             cursor.TryGotoNext(i => i.MatchLdfld<HeroController>("RECOIL_DURATION_STAL"));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(time => (PlayerDataAccess.equippedCharm_14 ? LS.steadyBodyKnockback : LS.regularDamageKnockback));
+            cursor.EmitDelegate<Func<float, float>>(time => (PlayerDataAccess.equippedCharm_14 ? GS.steadyBodyKnockback : GS.regularDamageKnockback));
         }
         //	Negate Hard Fall
         private bool SteadyBodyNegateHardFall(On.HeroController.orig_ShouldHardLand orig, HeroController self, Collision2D collision)
         {
-            if (LS.steadyBodyNegateHardFall && PlayerDataAccess.equippedCharm_14)
+            if (GS.steadyBodyNegateHardFall && PlayerDataAccess.equippedCharm_14)
             {
                 return false;
             }
@@ -3273,7 +3397,7 @@ namespace CharmReValance
                 damageAmount = 0;
                 if (!meteorDrop)
                 {
-                    go.GetComponent<HealthManager>().ApplyExtraDamage(LS.steadyBodyDefendersCrestImpactDamage);
+                    go.GetComponent<HealthManager>().ApplyExtraDamage(GS.steadyBodyDefendersCrestImpactDamage);
                     meteorDrop = true;
                     GameManager.instance.StartCoroutine(MeteorDrop());
                 }
@@ -3288,7 +3412,7 @@ namespace CharmReValance
             cursor.TryGotoNext(i => i.MatchLdstr("equippedCharm_14"));
             cursor.GotoNext();
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<bool, bool>>(equipped => (LS.steadyBodyNegateNailRecoil && PlayerDataAccess.equippedCharm_14));
+            cursor.EmitDelegate<Func<bool, bool>>(equipped => (GS.steadyBodyNegateNailRecoil && PlayerDataAccess.equippedCharm_14));
         }
         private void SteadyBodyRecoilR(ILContext il)
         {
@@ -3296,7 +3420,7 @@ namespace CharmReValance
             cursor.TryGotoNext(i => i.MatchLdstr("equippedCharm_14"));
             cursor.GotoNext();
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<bool, bool>>(equipped => (LS.steadyBodyNegateNailRecoil && PlayerDataAccess.equippedCharm_14));
+            cursor.EmitDelegate<Func<bool, bool>>(equipped => (GS.steadyBodyNegateNailRecoil && PlayerDataAccess.equippedCharm_14));
         }
         #endregion
 
@@ -3310,12 +3434,12 @@ namespace CharmReValance
                 int currentHealth = PlayerDataAccess.health + (PlayerDataAccess.equippedCharm_27 ? PlayerDataAccess.healthBlue : 0);
                 int missingHealth = Math.Max(fullHealth - currentHealth, 1);
 
-                float damage = LS.thornsOfAgonyBaseDamage - LS.thornsOfAgonyDamageIncrease
-                    + (baldurShellBlocked ? LS.thornsOfAgonyBaldurBlockDamage : 0)
-                    + (missingHealth * (LS.thornsOfAgonyDamageIncrease
-                    + (PlayerDataAccess.equippedCharm_10 ? LS.thornsOfAgonyDefendersCrestDamage : 0)
-                    + (PlayerDataAccess.equippedCharm_14 ? LS.thornsOfAgonySteadyBodyDamage : 0)
-                    + (furyActive ? LS.thornsOfAgonyFotFDamage : 0)));
+                float damage = GS.thornsOfAgonyBaseDamage - GS.thornsOfAgonyDamageIncrease
+                    + (baldurShellBlocked ? GS.thornsOfAgonyBaldurBlockDamage : 0)
+                    + (missingHealth * (GS.thornsOfAgonyDamageIncrease
+                    + (PlayerDataAccess.equippedCharm_10 ? GS.thornsOfAgonyDefendersCrestDamage : 0)
+                    + (PlayerDataAccess.equippedCharm_14 ? GS.thornsOfAgonySteadyBodyDamage : 0)
+                    + (furyActive ? GS.thornsOfAgonyFotFDamage : 0)));
                 self.setValue.Value = (int)Math.Round(damage, MidpointRounding.AwayFromZero);
                 //Log("Thorns damage: " + self.setValue.Value + " (" + damage + ")");
             }
@@ -3326,10 +3450,10 @@ namespace CharmReValance
         {
             if (self.Fsm.GameObject.name == "Charm Effects" && self.Fsm.Name == "Thorn Counter" && self.State.Name == "Counter")
             {
-                float thornsRadius = LS.thornsOfAgonyRadius * (1.0f
-                    + (PlayerDataAccess.equippedCharm_4 ? LS.thornsOfAgonyStalwartShellRadius : 0f)
-                    + (PlayerDataAccess.equippedCharm_14 ? LS.thornsOfAgonySteadyBodyRadius : 0f)
-                    + (baldurShellBlocked ? LS.thornsOfAgonyBaldurBlockRadius : 0f));
+                float thornsRadius = GS.thornsOfAgonyRadius * (1.0f
+                    + (PlayerDataAccess.equippedCharm_4 ? GS.thornsOfAgonyStalwartShellRadius : 0f)
+                    + (PlayerDataAccess.equippedCharm_14 ? GS.thornsOfAgonySteadyBodyRadius : 0f)
+                    + (baldurShellBlocked ? GS.thornsOfAgonyBaldurBlockRadius : 0f));
                 self.Fsm.Variables.GetFsmGameObject("Thorn Hit").Value.transform.SetScaleX(thornsRadius);
                 self.Fsm.Variables.GetFsmGameObject("Thorn Hit").Value.transform.SetScaleY(thornsRadius);
                 //Log("Thorns radius: " + thornsRadius);
@@ -3388,22 +3512,54 @@ namespace CharmReValance
 
 //	Weaversong
         #region Weaversong Changes
-        private void WeaverlingAttack(On.HutongGames.PlayMaker.Actions.IntOperator.orig_OnEnter orig, IntOperator self)
+        private void WeaverlingAttack2(On.HutongGames.PlayMaker.Actions.SendEventByName.orig_OnEnter orig, SendEventByName self)
         {
-            if (self.Fsm.GameObject.name == "Enemy Damager" && self.Fsm.Name == "Attack" && self.State.Name == "Hit")
+            if (self.Fsm.GameObject.name == "Enemy Damager" && self.Fsm.Name == "Attack" &&
+                (self.State.Name == "Hit" || self.State.Name == "Parent?" || self.State.Name == "G Parent?"))
             {
                 if (self.Fsm.GameObject.transform.parent.name == "Weaverling(Clone)")
                 {
-                    int weaverlingDamage = LS.weaversongDamage
-                        - (PlayerDataAccess.equippedCharm_1 ? LS.weaversongGatheringSwarmDamageReduction : 0)
-                        + (PlayerDataAccess.equippedCharm_11 ? LS.weaversongFlukenestDamageIncrease : 0)
-                        + (PlayerDataAccess.equippedCharm_40 && PlayerDataAccess.grimmChildLevel == 5 ? LS.weaversongCarefreeMelodyDamageIncrease : 0);
-                    self.integer2 = weaverlingDamage;
+                    int weaverlingDamage = GS.weaversongDamage
+                        - (PlayerDataAccess.equippedCharm_1 ? GS.weaversongGatheringSwarmDamageReduction : 0)
+                        + (PlayerDataAccess.equippedCharm_11 ? GS.weaversongFlukenestDamageIncrease : 0)
+                        + (PlayerDataAccess.equippedCharm_40 && PlayerDataAccess.grimmChildLevel == 5 ? GS.weaversongCarefreeMelodyDamageIncrease : 0);
 
-                    int weaverlingSoulGain = LS.weaversongSoulGain
-                        + (PlayerDataAccess.equippedCharm_3 ? LS.weaversongGrubsongSoulGain : 0)
-                        + (PlayerDataAccess.equippedCharm_40 && PlayerDataAccess.grimmChildLevel == 5 ? LS.weaversongCarefreeMelodySoulGain : 0);
+                    int weaverlingSoulGain = GS.weaversongSoulGain
+                        - (PlayerDataAccess.equippedCharm_11 ? GS.weaversongFlukenestSoulReduction : 0)
+                        + (PlayerDataAccess.equippedCharm_3 ? GS.weaversongGrubsongSoulGain : 0)
+                        + (PlayerDataAccess.equippedCharm_40 && PlayerDataAccess.grimmChildLevel == 5 ? GS.weaversongCarefreeMelodySoulGain : 0);
                     HeroController.instance.AddMPCharge(weaverlingSoulGain);
+
+                    if (self.State.Name == "Hit")
+                    {
+                        //  Disable vanilla damage
+                        self.State.DisableAction(5);
+                        self.State.DisableAction(7);
+
+                        //  Apply damage via HitTaker instead
+                        GameObject weaverling = self.Fsm.GameObject.transform.parent.gameObject;
+                        HitTaker.Hit(self.eventTarget.gameObject.GameObject.Value, new HitInstance
+                        {
+                            Source = weaverling,
+                            AttackType = AttackTypes.Spell,
+                            CircleDirection = true,
+                            DamageDealt = weaverlingDamage,
+                            Direction = 0f,
+                            IgnoreInvulnerable = false,
+                            MagnitudeMultiplier = 0f,
+                            MoveAngle = 0f,
+                            MoveDirection = true,
+                            Multiplier = 1f,
+                            SpecialType = SpecialTypes.None,
+                            IsExtraDamage = false
+                        }, 3);
+                    }
+                    else
+                    {
+                        //  Disable vanilla damage
+                        self.State.DisableAction(6);
+                        self.State.DisableAction(8);
+                    }
                 }
             }
 
@@ -3426,13 +3582,13 @@ namespace CharmReValance
                 // Speeds
                 if (self.State.Name == "Run L")
                 {
-                    self.min.Value = -LS.weaversongSpeedMax;
-                    self.max.Value = -LS.weaversongSpeedMin;
+                    self.min.Value = -GS.weaversongSpeedMax;
+                    self.max.Value = -GS.weaversongSpeedMin;
                 }
                 else if (self.State.Name == "Run R")
                 {
-                    self.min.Value = LS.weaversongSpeedMin;
-                    self.max.Value = LS.weaversongSpeedMax;
+                    self.min.Value = GS.weaversongSpeedMin;
+                    self.max.Value = GS.weaversongSpeedMax;
                 }
             }
 
@@ -3443,7 +3599,7 @@ namespace CharmReValance
             // Sprintmaster Multiplier
             if (self.Fsm.GameObject.name == "Weaverling(Clone)" && self.Fsm.Name == "Control" && self.State.Name == "Sprintmaster" && self.State.ActiveActionIndex == 2)
             {
-                self.floatValue.Value = 1f + (float)(LS.weaversongSprintmasterSpeedIncrease / 100f);
+                self.floatValue.Value = 1f + (float)(GS.weaversongSprintmasterSpeedIncrease / 100f);
             }
 
             orig(self);
@@ -3469,7 +3625,7 @@ namespace CharmReValance
 
                 self.AddCustomAction("Spawn", () =>
                 {
-                    int weaverlingCount = (PlayerDataAccess.equippedCharm_1 ? LS.weaversongGatheringSwarmCount : LS.weaversongCount);
+                    int weaverlingCount = (PlayerDataAccess.equippedCharm_1 ? GS.weaversongGatheringSwarmCount : GS.weaversongCount);
                     for (int i = 1; i <= weaverlingCount; i++)
                     {
                         spawner.OnEnter();
@@ -3523,6 +3679,12 @@ namespace CharmReValance
         {
             yield return new WaitForSeconds(0.5f);
             dreamshieldBlock = false;
+        }
+
+//  Get Tick Rate for DamageEffectTicker
+        private float GetTickRate(float damage, float time)
+        {
+            return time / (damage + 0.5f); //  +0.5f ensures time works out
         }
         #endregion
     }

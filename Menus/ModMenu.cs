@@ -17,11 +17,11 @@ public static class ModMenu
     public static Dictionary<string, MenuScreen>? ExtraMenuScreens;
 
     //gets all the fields that have our custom atribute (that also means if you dont add the attribute, it wont be in the menu
-    public static FieldInfo[] GSFields = typeof(LocalSettings).GetFields().Where(f => f.GetCustomAttribute<ModMenuElementAttribute>() != null).ToArray();
-    public static MethodInfo[] GSMethods = typeof(LocalSettings).GetMethods().Where(f => f.GetCustomAttribute<ModMenuElementAttribute>() != null).ToArray();
+    public static FieldInfo[] GSFields = typeof(GlobalSettings).GetFields().Where(f => f.GetCustomAttribute<ModMenuElementAttribute>() != null).ToArray();
+    public static MethodInfo[] GSMethods = typeof(GlobalSettings).GetMethods().Where(f => f.GetCustomAttribute<ModMenuElementAttribute>() != null).ToArray();
 
     //make it use your mods settings
-    public static LocalSettings Settings => CharmReValance.LS;
+    public static GlobalSettings Settings => CharmReValance.GS;
 
     public static MenuScreen CreateMenuScreen(MenuScreen modListMenu)
     {
@@ -36,14 +36,14 @@ public static class ModMenu
                 "",
                 submitAction =>
                 {
-                    CharmReValance.LS.ResetAllDefaults();
+                    CharmReValance.GS.ResetAllDefaults();
                 }),
             new MenuButton(
                 "Fix Charm Notches",
                 "",
                 submitAction =>
                 {
-                    CharmReValance.LS.FixCharmNotches();
+                    CharmReValance.GS.FixCharmNotches();
                 })
 
         });

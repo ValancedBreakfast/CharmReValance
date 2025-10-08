@@ -15,7 +15,7 @@
     <Product>CharmReValance</Product>
     <Description>A Hollow Knight Mod</Description>
     <Copyright>Copyright ©  2025</Copyright>
-    <AssemblyVersion>1.25.09.24</AssemblyVersion>
+    <AssemblyVersion>1.25.10.07</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <LangVersion>latest</LangVersion>
@@ -25,14 +25,19 @@
     <MakeDir Directories="$(ExportDir)/$(TargetName)/" />
     <MakeDir Directories="$(ExportDir)/$(TargetName)/zip/" />
     <MakeDir Condition="!Exists('$(HollowKnightRefs)/Mods/$(TargetName)/')" Directories="$(HollowKnightRefs)/Mods/$(TargetName)/" />
-    <Copy Condition="'$(DocumentationFile)' != ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb;$(TargetDir)/$(TargetName).xml" DestinationFolder="$(HollowKnightRefs)/Mods/$(TargetName)/" />
+    
+	<Copy Condition="'$(DocumentationFile)' != ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb;$(TargetDir)/$(TargetName).xml" DestinationFolder="$(HollowKnightRefs)/Mods/$(TargetName)/" />
     <Copy Condition="'$(DocumentationFile)' == ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb" DestinationFolder="$(HollowKnightRefs)/Mods/$(TargetName)/" />
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ExportDir)/$(TargetName)/" />
-    <Copy Condition="'$(DocumentationFile)' != ''" SourceFiles="README.md;$(TargetPath);$(TargetDir)/$(TargetName).pdb;$(TargetDir)/$(TargetName).xml" DestinationFolder="$(ExportDir)/$(TargetName)/zip/" />
+    
+	<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ExportDir)/$(TargetName)/" />
+    
+	<Copy Condition="'$(DocumentationFile)' != ''" SourceFiles="README.md;$(TargetPath);$(TargetDir)/$(TargetName).pdb;$(TargetDir)/$(TargetName).xml" DestinationFolder="$(ExportDir)/$(TargetName)/zip/" />
     <Copy Condition="'$(DocumentationFile)' == ''" SourceFiles="README.md;$(TargetPath);$(TargetDir)/$(TargetName).pdb" DestinationFolder="$(ExportDir)/$(TargetName)/zip/" />
-    <ZipDirectory SourceDirectory="$(ExportDir)/$(TargetName)/zip/" DestinationFile="$(ExportDir)/$(TargetName)/$(TargetName).zip" />
+    
+	<ZipDirectory SourceDirectory="$(ExportDir)/$(TargetName)/zip/" DestinationFile="$(ExportDir)/$(TargetName)/$(TargetName).zip" />
     <RemoveDir Directories="$(ExportDir)/$(TargetName)/zip/" />
-    <PropertyGroup>
+    
+	<PropertyGroup>
       <OutputFileString>SHA256 - $(AssemblyTitle).dll, Version $(AssemblyVersion):</OutputFileString>
     </PropertyGroup>
     <GetFileHash Files="$(ExportDir)/$(TargetName)/$(TargetName).dll" Algorithm="SHA256">
@@ -46,6 +51,7 @@
     </GetFileHash>
     <WriteLinesToFile File="$(ExportDir)/$(TargetName)/SHA.txt" Lines="$(OutputFileString);@(FilesWithHashes->'%(FileHash)');$(OutputZipString);@(ZipFilesWithHashes->'%(FileHash)')" Overwrite="true" Encoding="UTF-8" />
   </Target>
+  
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
       <HintPath>$(HollowKnightRefs)/Assembly-CSharp.dll</HintPath>
