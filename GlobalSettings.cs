@@ -153,7 +153,7 @@ namespace CharmReValance
 
 //	Defender's Crest
         private static readonly int defaultCharm10NotchCost = 1;
-        private static readonly int defaultDefendersCrestDiscount = 20;
+        private static readonly float defaultDefendersCrestDiscount = 0.8f;
 		private static readonly float defaultDefendersCrestFrequency = 0.6f;
 		private static readonly float defaultDefendersCrestDuration = 1.1f;
 		private static readonly float defaultDefendersCrestRadius = 1f;
@@ -875,8 +875,8 @@ namespace CharmReValance
         [SliderIntElement("Defender's Crest", "Notch Cost", 0, 5)]
         public int charm10NotchCost = defaultCharm10NotchCost;
 
-        [InputIntElement("Defender's Crest", "Leg Eater Discount (%)", 0, 100)]
-        public int defendersCrestDiscount = defaultDefendersCrestDiscount;
+        [InputFloatElement("Defender's Crest", "Leg Eater Discount (%)", 0f, 1f)]
+        public float defendersCrestDiscount = defaultDefendersCrestDiscount;
 
         [InputFloatElement("Defender's Crest", "Cloud Spawn Frequency", 0.01f, 5f)]
         public float defendersCrestFrequency = defaultDefendersCrestFrequency;

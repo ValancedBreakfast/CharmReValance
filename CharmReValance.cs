@@ -1155,7 +1155,7 @@ namespace CharmReValance
             ILCursor cursor = new ILCursor(il).Goto(0);
             cursor.TryGotoNext(i => i.MatchLdcR4(0.8f));
             cursor.GotoNext();
-            cursor.EmitDelegate<Func<float, float>>(Discount => 100f - ((float)(GS.defendersCrestDiscount / 100f)));
+            cursor.EmitDelegate<Func<float, float>>(Discount => GS.defendersCrestDiscount);
         }
         private void DungCloudSettings(On.HutongGames.PlayMaker.Actions.Wait.orig_OnEnter orig, Wait self)
         {
